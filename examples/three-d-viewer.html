@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-au" ng-app="ThreeDApp">
+<head>
+	<title>3D Viewer</title>
+   <link href="gocad/assets/gocad.css" rel="stylesheet" type="text/css"></link>
+	<!-- bower:css -->
+	<!-- endbower -->
+
+	<!-- inject:css -->
+	<!-- endinject -->
+
+</head>
+
+<body>
+
+<!--[if IE ]>
+<div style="margin-right:100px; position:absolute; top:0">
+<p>
+<img src="resources/css/images/geoscience_inline_padded_small.png" style="float:left;padding-right:10px;" />
+<br/>
+<strong>Explorer COSSAP browser requirements.</strong>
+Unfortunately this application requires a WebGL capable browser which yours appears not to be. We will not be providing a lower spec
+version of this application in the near future. The latest Firefox, Chrome and Microsoft Edge browsers have been tested to work as of mid-2015.
+
+</div>
+<![endif]-->
+<div gocad-world style="top:30px;bottom:0;position:fixed;left:0;right:0"></div>
+<div gocad-drop gocad-transformer></div>
+<div gocad-toolbar class="gocadToolbar"></div>
+<div gocad-list class="gocadListContainer"></div>
+<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.9/angular.js"></script>
+<script src="gocad/bower_components/components-threejs/three.js"></script>
+<script src="gocad/resources/three/lut.js"></script>
+<script src="gocad/resources/three/orbitcontrols.js"></script>
+<script src="gocad/resources/three/flycontrols.js"></script>
+<script src="gocad/resources/three/firstpersoncontrols.js"></script>
+<script src="gocad/resources/three/windowresize.js"></script>
+<script src="gocad/assets/gocad.js"></script>
+
+<!-- bower:js -->
+<!-- endbower -->
+
+<!-- inject:js -->
+<!-- endinject -->
+
+</body>
+
+</html>

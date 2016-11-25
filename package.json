@@ -1,0 +1,56 @@
+{
+  "name": "explorer3d",
+  "version": "0.0.1",
+  "description": "JavaScript 3D library",
+  "main": "build/explorer3d.js",
+  "repository": "Tomella/explorer3d.js",
+  "jsnext:main": "build/explorer3d.modules.js",
+  "files": [
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "build/explorer3d.js",
+    "build/explorer3d.min.js",
+    "build/explorer3d.modules.js",
+    "src",
+    "examples/js",
+    "examples/fonts",
+    "bower.json"
+  ],
+  "directories": {
+    "doc": "docs",
+    "example": "examples",
+    "test": "test"
+  },
+  "eslintConfig": {
+    "extends": "mdcs"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "build-uglify": "rollup -c && uglifyjs build/explorer3d.js -cm --preamble \"// explorer3d.org/license\" > build/explorer3d.min.js",
+    "build-closure": "rollup -c && java -jar utils/build/compiler/closure-compiler-v20160713.jar --warning_level=VERBOSE --jscomp_off=globalThis --jscomp_off=checkTypes --externs utils/build/externs.js --language_in=ECMASCRIPT5_STRICT --js build/explorer3d.js --js_output_file build/explorer3d.min.js",
+    "dev": "rollup -c -w",
+    "lint": "eslint src",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "explorer3d",
+    "explorer3d.js",
+    "threejs",
+    "3d",
+    "webgl"
+  ],
+  "author": "Tomella",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Tomella/explorer3d.js/issues"
+  },
+  "homepage": "http://web.geospeedster.com/",
+  "devDependencies": {
+    "eslint": "^3.10.2",
+    "eslint-config-mdcs": "^4.2.2",
+    "rollup": "^0.36.3",
+    "rollup-watch": "^2.5.0",
+    "uglify-js": "^2.7.4"
+  }
+}
