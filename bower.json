@@ -1,0 +1,9 @@
+{
+  "name": "explorer3d",
+  "version": "0.0.1-SNAPSHOT",
+  "dependencies": {
+    "geotiffparser": "git@github.com:xlhomme/GeotiffParser.js.git",
+    "proj4": "~2.3.15",
+    "three.js": "*"
+  }
+}
