@@ -1,3 +1,8 @@
+/**
+ * External dependencies that don't have Typescript definitions.
+ * They are either in the resources folder, a bower dependency or loaded via CDN
+ */
+
 declare namespace THREE {
    export class DataSurfaceLoader {
       load(elevationUrl: string, imageryUrl: string, onLoad: any, onProgress?: any, onError?: any): void;

@@ -1,4 +1,5 @@
-// Rollup the libs as used by the web workers
+// Rollup the libs as used by the web workers.
+// These are basically your domain objects, utilities and transformers
 export { CoordinateSystem } from "./gocad/CoordinateSystem";
 export { Document } from "./gocad/Document";
 export * from "./gocad/Header";

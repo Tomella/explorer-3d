@@ -893,7 +893,8 @@ function parseXml(xmlStr) {
     }
 }
 
-// Rollup the libs as used by the web workers
+// Rollup the libs as used by the web workers.
+// These are basically your domain objects, utilities and transformers
 
 function loadBorders(tsurf) {
     var segments = new THREE.Geometry();
