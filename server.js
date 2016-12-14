@@ -24,6 +24,8 @@ mime.define({
 
 // serve static files
 app.use(express.static("examples"));
+app.use('/dist', express.static('dist'));
+
 
 app.all('/service/*', function(req, res, next) {
     var method, r;

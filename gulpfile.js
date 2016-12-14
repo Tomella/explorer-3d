@@ -61,10 +61,7 @@ gulp.task('resources', function () {
       .pipe(gulp.dest(RESOURCES_BASE));
 });
 
-gulp.task('examples', ['dist', 'resources'], function () {
-   return gulp.src('dist/**/*')
-      .pipe(gulp.dest(EXAMPLE_OUT_BASE));
-});
+gulp.task('examples', ['dist', 'resources']);
 
 gulp.task("tslint", function() {
     return gulp.src("source/**/*.ts")
