@@ -1,5 +1,5 @@
-importScripts('../../assets/worker/lib.js',
-   '../../bower_components/proj4/dist/proj4.js'); //, '../../bower_components/components-threejs/three.js');
+importScripts('../lib.js',
+   '../resources/proj4.js');
 
 (function(context) {
    proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
