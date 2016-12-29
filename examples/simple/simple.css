@@ -26,9 +26,38 @@ body {
 
 #target {
    position: absolute;
+   z-index: 0;
    min-height: 300px;
    top: 30px;
    bottom: 0;
    left:0;
    right: 0;
+}
+
+#objectsList.active {
+    z-index: 2;
+    position: fixed;
+    width: 240px;
+    right: 8px;
+    top: 35px;
+    border: 2px solid gray;
+}
+
+.layer {
+   clear: both;
+   margin:0;
+   display: block;
+   white-space: nowrap;
+   width: 240px;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   color: black;
+   font-weight: bold;
+   text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+   -webkit-font-smoothing: antialiased;
+   padding-top: 3px;
+   padding-bottom: 3px;
+}
+.crossButton {
+   float: right;
 }

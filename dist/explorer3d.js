@@ -1346,13 +1346,96 @@ var DefaultWorldFactory = (function (_super) {
             }
         };
     }
+    DefaultWorldFactory.prototype.destroy = function () {
+        var state = this.state;
+        if (state.world) {
+            state.world.destroy();
+            state.world = null;
+            state.dataContainer = null;
+            this.dispatchEvent({
+                type: "objects.changed",
+                objects: []
+            });
+        }
+    };
+    DefaultWorldFactory.prototype.remove = function (obj) {
+        var result = false;
+        if (this.state.dataContainer) {
+            this.state.dataContainer.remove(obj);
+            result = this.state.dataContainer.children.length > 0;
+            if (!result) {
+                this.destroy();
+            }
+            else {
+                this.resize();
+                this.dispatchEvent({
+                    type: "objects.changed",
+                    objects: this.state.dataContainer.children
+                });
+            }
+        }
+        return result;
+    };
+    DefaultWorldFactory.prototype.resize = function () {
+        var box = new THREE.Box3().setFromObject(this.state.dataContainer);
+        var center = box.getCenter();
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 2.5;
+        var options = {
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                },
+                labels: {
+                    x: " East ",
+                    y: " North ",
+                    z: " Elevation "
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: -radius,
+                        dz: z
+                    }
+                }
+            }
+        };
+        this.state.world.resize(options);
+    };
     DefaultWorldFactory.prototype.show = function (data) {
+        var results;
         if (!this.state.dataContainer) {
-            return this.create(data);
+            results = this.create(data);
         }
         else {
-            return this.extend(data);
+            results = this.extend(data);
         }
+        this.dispatchEvent({
+            type: "objects.changed",
+            objects: this.state.dataContainer.children
+        });
+        return results;
     };
     DefaultWorldFactory.prototype.create = function (data) {
         var state = this.state;
@@ -1500,27 +1583,27 @@ var Modifier = (function () {
         var _this = this;
         this.eventdispatcher = eventdispatcher;
         this.callbacks = [];
-        eventdispatcher.addEventListener('world.created', function (event) {
+        eventdispatcher.addEventListener("world.created", function (event) {
             _this.world = event.world;
-            _this.flushCallbacks();
+            _this.flushCallbacks(event.world);
+        });
+        eventdispatcher.addEventListener("world.destroyed", function (event) {
+            _this.world = null;
+            _this.flushCallbacks(null);
         });
     }
-    Modifier.prototype.flushCallbacks = function () {
-        var _this = this;
+    Modifier.prototype.flushCallbacks = function (world) {
         if (this.callbacks) {
             this.callbacks.forEach(function (fn) {
-                fn(_this.world);
+                fn(world);
             });
             this.callbacks = [];
         }
     };
-    Modifier.prototype.then = function (callback) {
-        if (this.world) {
-            callback(this.world);
-        }
-        else {
-            this.callbacks.push(callback);
-        }
+    Modifier.prototype.onChange = function (callback) {
+        var _this = this;
+        setTimeout(function () { return callback(_this.world); });
+        this.callbacks.push(callback);
         return this;
     };
     return Modifier;
@@ -1535,10 +1618,14 @@ var LabelSwitch = (function (_super) {
         value ? this.on() : this.off();
     };
     LabelSwitch.prototype.on = function () {
-        this.world.labels.visible = true;
+        if (this.world) {
+            this.world.labels.visible = true;
+        }
     };
     LabelSwitch.prototype.off = function () {
-        this.world.labels.visible = false;
+        if (this.world) {
+            this.world.labels.visible = false;
+        }
     };
     return LabelSwitch;
 }(Modifier));
@@ -1549,10 +1636,9 @@ var VerticalExagerate = (function (_super) {
         _super.apply(this, arguments);
     }
     VerticalExagerate.prototype.set = function (value) {
-        this.world.dataContainer.scale.z = value;
-    };
-    VerticalExagerate.prototype.get = function () {
-        return this.world.dataContainer.scale.z;
+        if (this.world) {
+            this.world.dataContainer.scale.z = value;
+        }
     };
     return VerticalExagerate;
 }(Modifier));

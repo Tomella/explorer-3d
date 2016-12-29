@@ -15,19 +15,106 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
 
    public element: HTMLElement;
 
-   constructor () {
+   constructor() {
       super();
    }
 
-   public show(data): World {
-      if (!this.state.dataContainer) {
-         return this.create(data);
-      } else {
-         return this.extend(data);
+   destroy() {
+      let state = this.state;
+      if (state.world) {
+         state.world.destroy();
+         state.world = null;
+         state.dataContainer = null;
+         this.dispatchEvent({
+            type: "objects.changed",
+            objects: []
+         });
       }
    }
 
-   public create(data): World {
+   remove(obj: THREE.Object3D): boolean {
+      let result = false;
+      if (this.state.dataContainer) {
+         this.state.dataContainer.remove(obj);
+         result = this.state.dataContainer.children.length > 0;
+         if (!result) {
+            this.destroy();
+         } else {
+            this.resize();
+            this.dispatchEvent({
+               type: "objects.changed",
+               objects: this.state.dataContainer.children
+            });
+         }
+      }
+      return result;
+   }
+
+   resize() {
+      let box = new THREE.Box3().setFromObject(this.state.dataContainer);
+      let center = box.getCenter();
+      let radius = box.getBoundingSphere().radius;
+      let z = radius * 2.5;
+
+      let options = {
+         radius: radius,
+         axisHelper: {
+            on: true,
+            size: radius,
+            position: {
+               x: center.x,
+               y: center.y,
+               z: center.z
+            },
+            labels: {
+               x: " East ",
+               y: " North ",
+               z: " Elevation "
+            }
+         },
+         camera: {
+            far: z * 250,
+            near: radius * 0.01,
+            lookAt: {
+               x: center.x,
+               y: center.y,
+               z: center.z
+            }
+         },
+         lights: {
+            directional: {
+               center: {
+                  x: center.x,
+                  y: center.y,
+                  z: center.z
+               },
+               position: {
+                  dx: radius,
+                  dy: -radius,
+                  dz: z
+               }
+            }
+         }
+      };
+      this.state.world.resize(options);
+   }
+
+   public show(data: THREE.Object3D): World {
+      let results;
+      if (!this.state.dataContainer) {
+         results = this.create(data);
+      } else {
+         results = this.extend(data);
+      }
+
+      this.dispatchEvent({
+         type: "objects.changed",
+         objects: this.state.dataContainer.children
+      });
+      return results;
+   }
+
+   public create(data: THREE.Object3D): World {
       let state = this.state;
       let container = new THREE.Object3D();
       container.add(data);
@@ -101,12 +188,12 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
       return state.world;
    }
 
-   public add(obj3d) {
+   public add(obj3d: THREE.Object3D) {
       this.state.world.scene.add(obj3d);
       this.state.world.dataContainer = obj3d;
    }
 
-   public extend(data): World {
+   public extend(data: THREE.Object3D): World {
       let center = new THREE.Box3().setFromObject(data).getCenter();
       data.userData.center = center;
       this.state.dataContainer.add(data);

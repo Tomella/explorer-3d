@@ -22,7 +22,14 @@
             <option value="64">64</option>
             <option value="128">128</option>
          </select>
-         Labels on/off: <input type="checkbox" id="labelSwitch"></input>
+         <span style="border-left: 1px solid darkgray;padding-left: 7px">
+            Labels on/off:
+            <input type="checkbox" id="labelSwitch"></input>
+         </span>
+      </span>
+
+      <span style="float: right;">
+         <button id="selfDestruct">X</button>
       </span>
    </div>
 
@@ -47,6 +54,8 @@
       </select>
    </div>
    <div id="target"></div>
+   <div id="objectsList"></div>
+
 <!-- Stuff we didn't write-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.15/proj4.js"></script>

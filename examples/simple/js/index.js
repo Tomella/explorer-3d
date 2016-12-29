@@ -2,7 +2,9 @@
    // Keep all the DOM stuff together. Make the abstraction to the HTML here
    var dom = {
       verticalExageration: document.getElementById("exagerate"),
+      selfDestruct: document.getElementById("selfDestruct"),
       labelSwitch: document.getElementById("labelSwitch"),
+      objectsList: document.getElementById("objectsList"),
       fileDrop: document.getElementById("fileDrop"),
       target: document.getElementById("target"),
       projection: {
@@ -30,11 +32,11 @@
 
    // Add a listener to the file drop area. Just keep
    let fileDrop = new Explorer3d.FileDrop(dom.fileDrop, function handler(file) {
-      var options = {
+      let options = {
          from: dom.projection.from,
          to:   dom.projection.to
       };
-      var promise;
+      let promise;
 
       if (file.name.indexOf(".json") > 0) {
          promise = geojsonParser.parse({ file: file, options: options });
@@ -47,21 +49,60 @@
    });
 
    // We'll attach something to change vertical exageration now.
-   var verticalExagerate= new Explorer3d.VerticalExagerate(factory).then(world => {
-      console.log("Ready VerticalExagerate");
+   let verticalExagerate = new Explorer3d.VerticalExagerate(factory).onChange(world => {
       verticalExagerate.set(+dom.verticalExageration.value);
-      dom.verticalExageration.addEventListener("change", (event) => {
-         verticalExagerate.set(+dom.verticalExageration.value);
-      });
+   });
+   dom.verticalExageration.addEventListener("change", (event) => {
+      verticalExagerate.set(+dom.verticalExageration.value);
    });
 
    // Wire in the ability to turn labels on and off.
-   var labelSwitch = new Explorer3d.LabelSwitch(factory).then(world => {
-      console.log("Ready LabelSwitch");
+   var labelSwitch = new Explorer3d.LabelSwitch(factory).onChange(world => {
       labelSwitch.set(dom.labelSwitch.checked);
-      dom.labelSwitch.addEventListener("change", (event) => {
-         labelSwitch.set(dom.labelSwitch.checked);
+   });
+   dom.labelSwitch.addEventListener("change", (event) => {
+      labelSwitch.set(dom.labelSwitch.checked);
+   });
+
+   // Get a handle on children each time it changes.
+   factory.addEventListener("objects.changed", (event) => {
+      let target = dom.objectsList;
+      target.innerHTML = "";
+      target.className = "";
+      event.objects.forEach(obj => {
+         let template = document.createElement("div");
+         template.className = "layer";
+         let color = obj.material.color.getStyle();
+         color = color ? color : "lightgray"
+         template.style.backgroundColor = color;
+
+         let button = document.createElement("button");
+         let x = document.createTextNode("X");
+         let text = document.createTextNode(obj.userData.header.name);
+
+         let inp = document.createElement("input");
+         inp.type = "checkbox"
+         inp.checked = obj.visible;
+         inp.onchange = function(ev) {
+            obj.visible = ev.target.checked;
+         };
+
+         button.appendChild(x);
+         button.className = "crossButton";
+         button.onclick = function(event) {
+            factory.remove(obj);
+         }
+
+         template.appendChild(inp);
+         template.appendChild(text);
+         template.appendChild(button);
+         target.appendChild(template);
+         target.className = "active";
       });
    });
 
+   // Pretty simple. Get the factory to reset.
+   dom.selfDestruct.addEventListener("click", (event) => {
+      factory.destroy();
+   });
 })(window, Explorer3d)
