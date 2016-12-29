@@ -92,22 +92,7 @@ var EventDispatcher = (function () {
     EventDispatcher.prototype.dispatchEvent = function () {
         var array = [];
         return;
-        function fn(event) {
-            if (this._listeners === undefined)
-                return;
-            var listeners = this._listeners;
-            var listenerArray = listeners[event.type];
-            if (listenerArray !== undefined) {
-                event.target = this;
-                var length = listenerArray.length;
-                for (var i = 0; i < length; i++) {
-                    array[i] = listenerArray[i];
-                }
-                for (var i = 0; i < length; i++) {
-                    array[i].call(this, event);
-                }
-            }
-        }
+        
     };
     return EventDispatcher;
 }());

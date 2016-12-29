@@ -9,7 +9,8 @@ export { loadVSet } from "./bridge3js/vset";
 export { Shaders } from "./shaders/Shaders";
 
 export { DefaultWorldFactory } from "./view3d/defaultfactory";
-export { VerticalExagerate } from "./view3d/verticalexagerate";
+export { LabelSwitch } from "./modifiers/labelswitch";
+export { VerticalExagerate } from "./modifiers/verticalexagerate";
 
 export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";

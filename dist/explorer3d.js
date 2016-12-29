@@ -92,22 +92,7 @@ var EventDispatcher = (function () {
     EventDispatcher.prototype.dispatchEvent = function () {
         var array = [];
         return;
-        function fn(event) {
-            if (this._listeners === undefined)
-                return;
-            var listeners = this._listeners;
-            var listenerArray = listeners[event.type];
-            if (listenerArray !== undefined) {
-                event.target = this;
-                var length = listenerArray.length;
-                for (var i = 0; i < length; i++) {
-                    array[i] = listenerArray[i];
-                }
-                for (var i = 0; i < length; i++) {
-                    array[i].call(this, event);
-                }
-            }
-        }
+        
     };
     return EventDispatcher;
 }());
@@ -1510,19 +1495,17 @@ var DefaultWorldFactory = (function (_super) {
     return DefaultWorldFactory;
 }(THREE.EventDispatcher));
 
-var VerticalExagerate = (function () {
-    function VerticalExagerate(eventdispatcher) {
+var Modifier = (function () {
+    function Modifier(eventdispatcher) {
         var _this = this;
         this.eventdispatcher = eventdispatcher;
         this.callbacks = [];
         eventdispatcher.addEventListener('world.created', function (event) {
-            console.log("world created");
-            console.log(event);
             _this.world = event.world;
             _this.flushCallbacks();
         });
     }
-    VerticalExagerate.prototype.flushCallbacks = function () {
+    Modifier.prototype.flushCallbacks = function () {
         var _this = this;
         if (this.callbacks) {
             this.callbacks.forEach(function (fn) {
@@ -1531,7 +1514,7 @@ var VerticalExagerate = (function () {
             this.callbacks = [];
         }
     };
-    VerticalExagerate.prototype.onReady = function (callback) {
+    Modifier.prototype.then = function (callback) {
         if (this.world) {
             callback(this.world);
         }
@@ -1540,6 +1523,31 @@ var VerticalExagerate = (function () {
         }
         return this;
     };
+    return Modifier;
+}());
+
+var LabelSwitch = (function (_super) {
+    __extends(LabelSwitch, _super);
+    function LabelSwitch() {
+        _super.apply(this, arguments);
+    }
+    LabelSwitch.prototype.set = function (value) {
+        value ? this.on() : this.off();
+    };
+    LabelSwitch.prototype.on = function () {
+        this.world.labels.visible = true;
+    };
+    LabelSwitch.prototype.off = function () {
+        this.world.labels.visible = false;
+    };
+    return LabelSwitch;
+}(Modifier));
+
+var VerticalExagerate = (function (_super) {
+    __extends(VerticalExagerate, _super);
+    function VerticalExagerate() {
+        _super.apply(this, arguments);
+    }
     VerticalExagerate.prototype.set = function (value) {
         this.world.dataContainer.scale.z = value;
     };
@@ -1547,7 +1555,7 @@ var VerticalExagerate = (function () {
         return this.world.dataContainer.scale.z;
     };
     return VerticalExagerate;
-}());
+}(Modifier));
 
 var FileDrop = (function () {
     function FileDrop(element, handler) {
@@ -1685,6 +1693,7 @@ exports.loadTSurf = loadTSurf;
 exports.loadVSet = loadVSet;
 exports.Shaders = Shaders;
 exports.DefaultWorldFactory = DefaultWorldFactory;
+exports.LabelSwitch = LabelSwitch;
 exports.VerticalExagerate = VerticalExagerate;
 exports.FileDrop = FileDrop;
 exports.Parser = Parser;

@@ -2,6 +2,7 @@
    // Keep all the DOM stuff together. Make the abstraction to the HTML here
    var dom = {
       verticalExageration: document.getElementById("exagerate"),
+      labelSwitch: document.getElementById("labelSwitch"),
       fileDrop: document.getElementById("fileDrop"),
       target: document.getElementById("target"),
       projection: {
@@ -46,13 +47,21 @@
    });
 
    // We'll attach something to change vertical exageration now.
-   var verticalExagerate= new Explorer3d.VerticalExagerate(factory).onReady(world => {
-      console.log("Ready");
+   var verticalExagerate= new Explorer3d.VerticalExagerate(factory).then(world => {
+      console.log("Ready VerticalExagerate");
       verticalExagerate.set(+dom.verticalExageration.value);
       dom.verticalExageration.addEventListener("change", (event) => {
          verticalExagerate.set(+dom.verticalExageration.value);
       });
    });
 
+   // Wire in the ability to turn labels on and off.
+   var labelSwitch = new Explorer3d.LabelSwitch(factory).then(world => {
+      console.log("Ready LabelSwitch");
+      labelSwitch.set(dom.labelSwitch.checked);
+      dom.labelSwitch.addEventListener("change", (event) => {
+         labelSwitch.set(dom.labelSwitch.checked);
+      });
+   });
 
 })(window, Explorer3d)
