@@ -14,7 +14,7 @@ export { Unknown } from "./gocad/unknown";
 export { Vertex } from "./gocad/vertex";
 export { VSet } from "./gocad/vset";
 export { VSetHeader } from "./gocad/vsetheader";
-export { deepMerge } from "./util/deepMerge";
+export { deepMerge } from "./util/deepmerge";
 export { EventDispatcher } from "./util/eventdispatcher";
 export { LinePusher } from "./util/linepusher";
 export { LineReader } from "./util/linereader";
