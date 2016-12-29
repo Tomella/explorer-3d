@@ -1,4 +1,4 @@
-import * as util from "../util/LineReader";
+import * as util from "../util/linereader";
 
 export class Header {
    public values: any = {};

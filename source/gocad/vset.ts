@@ -1,7 +1,7 @@
-import * as type from "./Type";
-import * as head from "./VSetHeader";
-import * as util from "../util/LineReader";
-import * as coords from "./CoordinateSystem";
+import * as type from "./type";
+import * as head from "./vsetheader";
+import * as util from "../util/linereader";
+import * as coords from "./coordinatesystem";
 
 export class VSet extends type.Type {
    public type: string = "VSet";

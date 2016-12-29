@@ -1,10 +1,10 @@
-import * as type from "./Type";
-import * as surface from "./TSurf";
-import * as pline from "./PLine";
-import * as solid from "./TSolid";
-import * as set from "./VSet";
-import * as other from "./Unknown";
-import * as util from "../util/LineReader";
+import * as type from "./type";
+import * as surface from "./tsurf";
+import * as pline from "./pline";
+import * as solid from "./tsolid";
+import * as set from "./vset";
+import * as other from "./unknown";
+import * as util from "../util/linereader";
 
 export class TypeFactory {
    public isValid: boolean = false;

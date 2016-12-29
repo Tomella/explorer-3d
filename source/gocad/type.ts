@@ -1,7 +1,7 @@
-import * as util from "../util/LineReader";
-import * as event from "../util/EventDispatcher";
-import * as head from "./Header";
-import * as coords from "./CoordinateSystem";
+import * as util from "../util/linereader";
+import * as event from "../util/eventdispatcher";
+import * as head from "./header";
+import * as coords from "./coordinatesystem";
 
 export class Type extends event.EventDispatcher {
    public type: string = "Type";

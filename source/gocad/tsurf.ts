@@ -1,7 +1,7 @@
-import * as util from "../util/LineReader";
-import * as type from "./Type";
-import * as head from "./Header";
-import * as coords from "./CoordinateSystem";
+import * as util from "../util/linereader";
+import * as type from "./type";
+import * as head from "./header";
+import * as coords from "./coordinatesystem";
 
 export class TSurf extends type.Type {
    public type: string = "TSurf";

@@ -1,4 +1,4 @@
-import * as util from "../util/LineReader";
+import * as util from "../util/linereader";
 
 export class Properties {
    public isValid: boolean = true;

@@ -1,5 +1,5 @@
-import * as head from "./Header";
-import * as util from "../util/LineReader";
+import * as head from "./header";
+import * as util from "../util/linereader";
 
 export class VSetHeader extends head.Header {
    public color: number;

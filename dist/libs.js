@@ -256,6 +256,41 @@ function toColor(val) {
     return null;
 }
 
+var CoordinateSystem$1 = (function () {
+    function CoordinateSystem(reader) {
+        this.isValid = true;
+        this.typeMap = {
+            AXIS_NAME: split$1,
+            AXIS_UNIT: split$1
+        };
+        var line = reader.nextDataLine().trim();
+        if (line !== "GOCAD_ORIGINAL_COORDINATE_SYSTEM") {
+            reader.previous();
+            this.isValid = false;
+        }
+        else {
+            line = reader.nextDataLine().trim();
+            while (line && line !== "END_ORIGINAL_COORDINATE_SYSTEM") {
+                var index = line.indexOf(" ");
+                if (index > 0) {
+                    var name = line.substring(0, index);
+                    var rest = line.substring(index).trim();
+                    var mapper = this.typeMap[name] ? this.typeMap[name] : function (val) { return val; };
+                    this[name] = mapper(rest);
+                }
+                line = reader.nextDataLine().trim();
+            }
+        }
+        this.typeMap = null;
+    }
+    return CoordinateSystem;
+}());
+function split$1(val) {
+    return val.split(/\s+/g).map(function (str) {
+        return str.replace(/\"/g, "");
+    });
+}
+
 var TSurf = (function (_super) {
     __extends(TSurf, _super);
     /**
@@ -274,7 +309,7 @@ var TSurf = (function (_super) {
         }
         this.header = new Header(reader);
         // this.dispatchEvent('gocad.header', this.header);
-        var cs = new CoordinateSystem(reader);
+        var cs = new CoordinateSystem$1(reader);
         var zSign = 1;
         if (cs.isValid) {
             this.coordinateSystem = cs;
@@ -361,7 +396,7 @@ var PLine = (function (_super) {
             return;
         }
         this.header = new PLineHeader(reader);
-        var cs = new CoordinateSystem(reader);
+        var cs = new CoordinateSystem$1(reader);
         var zSign = 1;
         if (cs.isValid) {
             this.coordinateSystem = cs;
@@ -434,7 +469,7 @@ var TSolid = (function (_super) {
             return;
         }
         this.header = new Header(reader);
-        var cs = new CoordinateSystem(reader);
+        var cs = new CoordinateSystem$1(reader);
         var zSign = 1;
         if (cs.isValid) {
             this.coordinateSystem = cs;
@@ -491,7 +526,7 @@ var VSet = (function (_super) {
             return;
         }
         this.header = new VSetHeader(reader);
-        var cs = new CoordinateSystem(reader);
+        var cs = new CoordinateSystem$1(reader);
         var zSign = 1;
         if (cs.isValid) {
             this.coordinateSystem = cs;
@@ -586,6 +621,153 @@ var Document = (function () {
     return Document;
 }());
 
+var Header$1 = (function () {
+    function Header(reader) {
+        this.values = {};
+        this.typeMap = {
+            ivolmap: toBool$1,
+            imap: toBool$1,
+            parts: toBool$1,
+            mesh: toBool$1,
+            cn: toBool$1,
+            border: toBool$1,
+            "*solid*color": toColor$1
+        };
+        var line = reader.nextDataLine().trim();
+        while (line) {
+            if (line.indexOf("}") === 0) {
+                break;
+            }
+            var parts = line.split(":");
+            if (parts.length === 2) {
+                var mapper = this.typeMap[parts[0]];
+                mapper = mapper ? mapper : flowThru$1;
+                this.values[parts[0]] = mapper(parts[1]);
+            }
+            else {
+                console.warn("That doesn't look like a pair: " + line);
+            }
+            line = reader.nextDataLine().trim();
+        }
+        this.name = this.values["name"];
+        this.solidColor = this.values["*solid*color"];
+        this.solidColor = this.solidColor ? this.solidColor : 0xeeeeee;
+        this.typeMap = null;
+    }
+    Header.prototype.toColor = function (key) {
+        return toColor$1(key);
+    };
+    Header.prototype.toBool = function (val) {
+        return toBool$1(val);
+    };
+    return Header;
+}());
+function toBool$1(val) {
+    return "true" === val;
+}
+function flowThru$1(val) {
+    return val;
+}
+function toColor$1(val) {
+    if (val) {
+        var parts = val.trim().split(/\s+/g);
+        if (parts.length === 1) {
+            if (parts[0].indexOf("#") === 0) {
+                return parseInt("0x" + parts[0].substring(1));
+            }
+        }
+        return parseFloat(parts[0]) * 255 * 256 * 256 + parseFloat(parts[1]) * 255 * 256 + parseFloat(parts[2]) * 255;
+    }
+    return null;
+}
+
+var PLine$1 = (function (_super) {
+    __extends(PLine, _super);
+    /**
+     * We come in here on the next line
+     */
+    function PLine(reader, projectionFn) {
+        _super.call(this, reader, projectionFn);
+        this.type = "PLine";
+        this.vertices = [];
+        this.lines = [];
+        var line = reader.expects("HEADER");
+        if (!line || line.indexOf("{") === -1) {
+            return;
+        }
+        this.header = new PLineHeader(reader);
+        var cs = new CoordinateSystem$1(reader);
+        var zSign = 1;
+        if (cs.isValid) {
+            this.coordinateSystem = cs;
+            zSign = this.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+        }
+        // let props = new Properties(reader);
+        // if(props.isValid) {
+        //   this.properties = props;
+        // }
+        line = reader.expects("ILINE");
+        var startIndex = 1;
+        var lastIndex = 1;
+        var hasSeg = false;
+        var lineSegments = [];
+        line = reader.nextDataLine();
+        var completed = (line ? line.trim() : "}") === "}";
+        while (!completed) {
+            if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
+                var v = vertex(line, this.projectionFn, zSign);
+                this.vertices[v.index] = v.all;
+                lastIndex = v.index;
+            }
+            else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
+                var a = atom(line);
+                this.vertices[a.index] = this.vertices[a.vertexId];
+            }
+            else if (line.indexOf("SEG") === 0) {
+                lineSegments.push(segment$1(line));
+                hasSeg = true;
+            }
+            else if (line.indexOf("ILINE") === 0 || line.indexOf("END") === 0) {
+                completed = line.indexOf("END") === 0;
+                if (!hasSeg && lastIndex > startIndex) {
+                    // We have to step over every vertex pair from start index to lastIndex
+                    for (var i = startIndex; i < lastIndex; i++) {
+                        lineSegments.push([i, i + 1]);
+                    }
+                }
+                this.lines.push(lineSegments);
+                lineSegments = [];
+                startIndex = lastIndex + 1;
+                hasSeg = false;
+            }
+            completed = !reader.hasMore();
+            if (!completed) {
+                completed = (line = reader.nextDataLine().trim()) === "}";
+            }
+        }
+        this.clear();
+    }
+    return PLine;
+}(Type));
+function segment$1(seg) {
+    var parts = seg.split(/\s+/g);
+    return [
+        parseInt(parts[1]),
+        parseInt(parts[2])
+    ];
+}
+
+var PLineHeader$1 = (function (_super) {
+    __extends(PLineHeader, _super);
+    function PLineHeader(reader) {
+        _super.call(this, reader);
+        this.paintedVariable = this.values["*painted*variable"];
+        var color = this.values["*line*color"];
+        this.color = color ? this.toColor(color) : 0x0000ff;
+    }
+    return PLineHeader;
+}(Header));
+
 var Properties = (function () {
     function Properties(reader, terminators) {
         var _this = this;
@@ -649,6 +831,281 @@ function getValues(line) {
     return parts;
 }
 
+var TSolid$1 = (function (_super) {
+    __extends(TSolid, _super);
+    function TSolid(reader, projectionFn) {
+        _super.call(this, reader, projectionFn);
+        this.type = "TSolid";
+        this.vertices = [];
+        this.tetras = [];
+        var line = reader.expects("HEADER");
+        if (!line) {
+            return;
+        }
+        this.header = new Header(reader);
+        var cs = new CoordinateSystem$1(reader);
+        var zSign = 1;
+        if (cs.isValid) {
+            this.coordinateSystem = cs;
+            zSign = this.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+        }
+        line = reader.expects("TVOLUME");
+        while ((line = reader.nextDataLine().trim()) !== "END") {
+            if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
+                var v = vertex(line, this.projectionFn, zSign);
+                this.vertices[v.index] = v.all;
+            }
+            else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
+                var a = atom(line);
+                this.vertices[a.index] = this.vertices[a.vertexId];
+            }
+            else if (line.indexOf("TETRA") === 0) {
+                this.tetras.push(tetra$1(line));
+            }
+        }
+        this.clear();
+    }
+    return TSolid;
+}(Type));
+function tetra$1(tetra) {
+    var parts = tetra.split(/\s+/g);
+    return [
+        parseInt(parts[1]),
+        parseInt(parts[2]),
+        parseInt(parts[3]),
+        parseInt(parts[4])
+    ];
+}
+
+var TSurf$1 = (function (_super) {
+    __extends(TSurf, _super);
+    /**
+     * We come in here on the next line
+     */
+    function TSurf(reader, projectionFn) {
+        _super.call(this, reader, projectionFn);
+        this.type = "TSurf";
+        this.vertices = [];
+        this.faces = [];
+        this.bstones = [];
+        this.borders = [];
+        var line = reader.expects("HEADER");
+        if (!line || line.indexOf("{") === -1) {
+            return;
+        }
+        this.header = new Header(reader);
+        // this.dispatchEvent('gocad.header', this.header);
+        var cs = new CoordinateSystem$1(reader);
+        var zSign = 1;
+        if (cs.isValid) {
+            this.coordinateSystem = cs;
+            zSign = this.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+        }
+        line = reader.expects("TFACE");
+        while ((line = reader.nextDataLine().trim()) !== "END") {
+            if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
+                var v = vertex(line, this.projectionFn, zSign);
+                this.vertices[v.index] = v.all;
+            }
+            else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
+                var a = atom(line);
+                this.vertices[a.index] = this.vertices[a.vertexId];
+            }
+            else if (line.indexOf("TRGL") === 0) {
+                this.faces.push(face$1(line).abc);
+            }
+            else if (line.indexOf("BSTONE") === 0) {
+                this.bstones.push(bstone$1(line));
+            }
+            else if (line.indexOf("BORDER") === 0) {
+                var b = border$1(line);
+                this.borders[b.id] = [b.vertices[0], b.vertices[1]];
+            }
+        }
+        this.clear();
+    }
+    return TSurf;
+}(Type));
+function border$1(border) {
+    var parts = border.split(/\s+/g);
+    return {
+        id: +parts[1],
+        vertices: [
+            +parts[2],
+            +parts[3]
+        ]
+    };
+}
+function face$1(face) {
+    var parts = face.split(/\s+/g);
+    var length = parts.length;
+    var response = {
+        get abc() {
+            return [this.a, this.b, this.c];
+        }
+    };
+    if (length === 4) {
+        response.a = parseInt(parts[1]);
+        response.b = parseFloat(parts[2]);
+        response.c = parseFloat(parts[3]);
+    }
+    return response;
+}
+function bstone$1(bstone) {
+    var parts = bstone.split(/\s+/g);
+    return parseInt(parts[1]);
+}
+
+var Type$1 = (function (_super) {
+    __extends(Type, _super);
+    /**
+     * We come in here on the next line
+     */
+    function Type(reader, projectionFn) {
+        _super.call(this);
+        this.type = "Type";
+        this.projectionFn = function (coords) {
+            return coords;
+        };
+        this.isValid = false;
+        this.reader = reader;
+        if (projectionFn) {
+            this.projectionFn = projectionFn;
+        }
+    }
+    Type.prototype.clear = function () {
+        this.reader = null;
+    };
+    return Type;
+}(EventDispatcher));
+function atom$1(atm) {
+    var parts = atm.split(/\s+/g);
+    var length = parts.length;
+    var response = {
+        get xyz() {
+            return [this.x, this.y, this.z];
+        }
+    };
+    parts.forEach(function (item, i) {
+        switch (i) {
+            case 0: break;
+            case 1:
+                response.index = parseInt(item);
+                break;
+            case 2:
+                response.vertexId = parseFloat(item);
+                break;
+            case 3:
+                response.properties = [];
+            // Fall through to populate
+            default:
+                response.properties.push(item);
+        }
+    });
+    return response;
+}
+function vertex$1(vrtx, projectionFn, zDirection) {
+    var parts = vrtx.split(/\s+/g);
+    var length = parts.length;
+    var zSign = zDirection ? zDirection : 1;
+    var coord = [];
+    var response = {
+        get xyz() {
+            return [this.x, this.y, this.z];
+        },
+        get all() {
+            var data = [this.x, this.y, this.z];
+            if (this.properties) {
+                this.properties.forEach(function (item) {
+                    data.push(item);
+                });
+            }
+            return data;
+        }
+    };
+    parts.forEach(function (item, i) {
+        switch (i) {
+            case 0: break;
+            case 1:
+                response.index = parseInt(item);
+                break;
+            case 2:
+                coord[0] = parseFloat(item);
+                // response.x = parseFloat(item);
+                break;
+            case 3:
+                coord[1] = parseFloat(item);
+                // response.y = parseFloat(item);
+                break;
+            case 4:
+                response.z = parseFloat(item) * zSign;
+                break;
+            case 5:
+                response.properties = [];
+            // Fall through to populate
+            default:
+                response.properties.push(item);
+        }
+    });
+    if (projectionFn) {
+        coord = projectionFn(coord);
+    }
+    response.x = coord[0];
+    response.y = coord[1];
+    return response;
+}
+
+var TypeFactory$1 = (function () {
+    function TypeFactory(reader, projectionFn) {
+        this.isValid = false;
+        if (reader.hasMore()) {
+            var line = reader.next().trim();
+            var parts = line.split(/\s+/g);
+            this.isValid = parts.length === 3
+                && parts[0] === "GOCAD"
+                && (parts[2] === "1.0" || parts[2] === "1");
+            if (this.isValid) {
+                this.version = parts[2];
+                if (parts[1] === "TSurf") {
+                    this.type = new TSurf(reader, projectionFn);
+                }
+                else if (parts[1] === "PLine") {
+                    this.type = new PLine(reader, projectionFn);
+                }
+                else if (parts[1] === "TSolid") {
+                    this.type = new TSolid(reader, projectionFn);
+                }
+                else if (parts[1] === "VSet") {
+                    this.type = new VSet(reader, projectionFn);
+                }
+                else {
+                    this.type = new Unknown(reader, projectionFn);
+                }
+            }
+        }
+    }
+    return TypeFactory;
+}());
+
+var Unknown$1 = (function (_super) {
+    __extends(Unknown, _super);
+    /**
+     * We come in here on the next line
+     */
+    function Unknown(reader, projectionFn) {
+        _super.call(this, reader, projectionFn);
+        this.type = "Unknown";
+        while (reader.hasMore()) {
+            var line = reader.next().trim();
+            if (line === "END") {
+                break;
+            }
+        }
+        this.clear();
+    }
+    return Unknown;
+}(Type));
+
 var Vertex = (function () {
     function Vertex(str, projectionFn) {
         if (str) {
@@ -661,6 +1118,50 @@ var Vertex = (function () {
     }
     return Vertex;
 }());
+
+var VSet$1 = (function (_super) {
+    __extends(VSet, _super);
+    /**
+     * We come in here on the next line
+     */
+    function VSet(reader, projectionFn) {
+        _super.call(this, reader, projectionFn);
+        this.type = "VSet";
+        this.vertices = [];
+        var line = reader.expects("HEADER");
+        if (!line || line.indexOf("{") === -1) {
+            return;
+        }
+        this.header = new VSetHeader(reader);
+        var cs = new CoordinateSystem$1(reader);
+        var zSign = 1;
+        if (cs.isValid) {
+            this.coordinateSystem = cs;
+            zSign = this.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+        }
+        while ((line = reader.nextDataLine().trim()) !== "END") {
+            if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
+                var v = vertex(line, projectionFn, zSign);
+                this.vertices[v.index] = v.all;
+            }
+            else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
+                var a = atom(line);
+                this.vertices[a.index] = this.vertices[a.vertexId];
+            }
+        }
+        this.clear();
+    }
+    return VSet;
+}(Type));
+
+var VSetHeader$1 = (function (_super) {
+    __extends(VSetHeader, _super);
+    function VSetHeader(reader) {
+        _super.call(this, reader);
+        this.color = this.toColor(this.values["*atoms*color"]);
+    }
+    return VSetHeader;
+}(Header));
 
 function deepMerge(target, source) {
     var array = Array.isArray(source);
@@ -705,6 +1206,58 @@ function deepMerge(target, source) {
     }
     return dst;
 }
+
+/**
+ * https://github.com/mrdoob/eventdispatcher.js/
+ */
+var EventDispatcher$1 = (function () {
+    function EventDispatcher() {
+    }
+    EventDispatcher.prototype.apply = function (object) {
+        object.addEventListener = EventDispatcher.prototype.addEventListener;
+        object.hasEventListener = EventDispatcher.prototype.hasEventListener;
+        object.removeEventListener = EventDispatcher.prototype.removeEventListener;
+        object.dispatchEvent = EventDispatcher.prototype.dispatchEvent;
+    };
+    EventDispatcher.prototype.addEventListener = function (type, listener) {
+        if (this._listeners === undefined)
+            this._listeners = {};
+        var listeners = this._listeners;
+        if (listeners[type] === undefined) {
+            listeners[type] = [];
+        }
+        if (listeners[type].indexOf(listener) === -1) {
+            listeners[type].push(listener);
+        }
+    };
+    EventDispatcher.prototype.hasEventListener = function (type, listener) {
+        if (this._listeners === undefined)
+            return false;
+        var listeners = this._listeners;
+        if (listeners[type] !== undefined && listeners[type].indexOf(listener) !== -1) {
+            return true;
+        }
+        return false;
+    };
+    EventDispatcher.prototype.removeEventListener = function (type, listener) {
+        if (this._listeners === undefined)
+            return;
+        var listeners = this._listeners;
+        var listenerArray = listeners[type];
+        if (listenerArray !== undefined) {
+            var index = listenerArray.indexOf(listener);
+            if (index !== -1) {
+                listenerArray.splice(index, 1);
+            }
+        }
+    };
+    EventDispatcher.prototype.dispatchEvent = function () {
+        var array = [];
+        return;
+        
+    };
+    return EventDispatcher;
+}());
 
 var LinePusher = (function () {
     function LinePusher(file, handler, errorHandler) {
@@ -883,29 +1436,29 @@ function parseXml(xmlStr) {
 
 exports.CoordinateSystem = CoordinateSystem;
 exports.Document = Document;
-exports.PLine = PLine;
-exports.PLineHeader = PLineHeader;
+exports.PLine = PLine$1;
+exports.PLineHeader = PLineHeader$1;
 exports.Properties = Properties;
-exports.TSolid = TSolid;
-exports.TSurf = TSurf;
-exports.TypeFactory = TypeFactory;
-exports.Unknown = Unknown;
+exports.TSolid = TSolid$1;
+exports.TSurf = TSurf$1;
+exports.TypeFactory = TypeFactory$1;
+exports.Unknown = Unknown$1;
 exports.Vertex = Vertex;
-exports.VSet = VSet;
-exports.VSetHeader = VSetHeader;
+exports.VSet = VSet$1;
+exports.VSetHeader = VSetHeader$1;
 exports.deepMerge = deepMerge;
-exports.EventDispatcher = EventDispatcher;
+exports.EventDispatcher = EventDispatcher$1;
 exports.LinePusher = LinePusher;
 exports.LineReader = LineReader;
 exports.range = range;
 exports.parseXml = parseXml;
-exports.toBool = toBool;
-exports.flowThru = flowThru;
-exports.toColor = toColor;
-exports.Header = Header;
-exports.atom = atom;
-exports.vertex = vertex;
-exports.Type = Type;
+exports.toBool = toBool$1;
+exports.flowThru = flowThru$1;
+exports.toColor = toColor$1;
+exports.Header = Header$1;
+exports.atom = atom$1;
+exports.vertex = vertex$1;
+exports.Type = Type$1;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

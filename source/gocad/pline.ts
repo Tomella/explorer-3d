@@ -1,9 +1,9 @@
-import * as util from "../util/LineReader";
-import * as coords from "./CoordinateSystem";
-import * as head from "./PLineHeader";
-import * as type from "./Type";
-import * as factory from "./TypeFactory";
-import * as prop from "./Properties";
+import * as util from "../util/linereader";
+import * as coords from "./coordinatesystem";
+import * as head from "./plineheader";
+import * as type from "./type";
+import * as factory from "./typefactory";
+import * as prop from "./properties";
 
 export class PLine extends type.Type {
    public type: string = "PLine";

@@ -1,6 +1,6 @@
-import * as util from "../util/LineReader";
-import * as type from "./Type";
-import * as factory from "./TypeFactory";
+import * as util from "../util/linereader";
+import * as type from "./type";
+import * as factory from "./typefactory";
 
 export class Document {
    public types: type.Type[];

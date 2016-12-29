@@ -1,5 +1,5 @@
-import * as util from "../util/LineReader";
-import * as type from "./Type";
+import * as util from "../util/linereader";
+import * as type from "./type";
 
 
 export class Unknown extends type.Type {

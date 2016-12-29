@@ -1,6 +1,5 @@
-
-import * as util from "../util/LineReader";
-import * as head from "./Header";
+import * as util from "../util/linereader";
+import * as head from "./header";
 
 export class PLineHeader extends head.Header {
 
