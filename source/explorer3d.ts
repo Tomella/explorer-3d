@@ -6,7 +6,7 @@ export { TSurfLoader } from "./bridge3js/inctsurf";
 export { loadPLine } from "./bridge3js/pline";
 export { loadTSurf } from "./bridge3js/tsurf";
 export { loadVSet } from "./bridge3js/vset";
-export { Shaders } from "./shaders/Shaders";
+export { Shaders } from "./shaders/shaders";
 
 export { DefaultWorldFactory } from "./view3d/defaultfactory";
 export { LabelSwitch } from "./modifiers/labelswitch";
