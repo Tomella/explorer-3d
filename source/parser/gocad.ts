@@ -8,7 +8,6 @@ export class GocadParser extends Parser {
          let worker = new Worker(this.getBase() + GocadParser.WORKER_NAME);
          worker.addEventListener("message", function(response) {
             console.log("worker geojson.js finished" );
-            console.log(response.data);
             resolve(response.data);
          });
          worker.postMessage(file);

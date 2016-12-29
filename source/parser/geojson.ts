@@ -8,7 +8,6 @@ export class GeoJsonParser extends Parser {
          let worker = new Worker(this.getBase() + GeoJsonParser.WORKER_NAME);
          worker.addEventListener("message", function(response) {
             console.log("worker geojson.js finished" );
-            console.log(response.data);
             resolve(response.data);
          });
          worker.postMessage(file);

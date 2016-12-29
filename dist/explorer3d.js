@@ -1740,7 +1740,6 @@ var GocadParser = (function (_super) {
             var worker = new Worker(_this.getBase() + GocadParser.WORKER_NAME);
             worker.addEventListener("message", function (response) {
                 console.log("worker geojson.js finished");
-                console.log(response.data);
                 resolve(response.data);
             });
             worker.postMessage(file);
@@ -1761,7 +1760,6 @@ var GeoJsonParser = (function (_super) {
             var worker = new Worker(_this.getBase() + GeoJsonParser.WORKER_NAME);
             worker.addEventListener("message", function (response) {
                 console.log("worker geojson.js finished");
-                console.log(response.data);
                 resolve(response.data);
             });
             worker.postMessage(file);

@@ -6,7 +6,7 @@ importScripts('../resources/proj4.js');
       var file = e.data.file;
       var options = e.data.options;
       var projectionFn = passThru;
-console.log(options)
+
       if(options && options.from && options.to) {
          projectionFn = reproject(options.from, options.to);
       }

@@ -30,7 +30,7 @@
    let geojsonParser = new Explorer3d.GeoJsonParser(),
       gocadParser = new Explorer3d.GocadParser();
 
-   // Add a listener to the file drop area. Just keep
+   // Add a listener to the file drop area.
    let fileDrop = new Explorer3d.FileDrop(dom.fileDrop, function handler(file) {
       let options = {
          from: dom.projection.from,
