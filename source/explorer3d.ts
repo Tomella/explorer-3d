@@ -8,4 +8,11 @@ export { loadTSurf } from "./bridge3js/tsurf";
 export { loadVSet } from "./bridge3js/vset";
 export { Shaders } from "./shaders/Shaders";
 
-export { World } from "./view3d/World";
+export { DefaultWorldFactory } from "./view3d/defaultfactory";
+export { VerticalExagerate } from "./view3d/verticalexagerate";
+
+export { FileDrop }     from "./filedrop/filedrop";
+export { Parser }       from "./parser/parser";
+export { Transformer }  from "./transformer/transform";
+export { GocadParser }  from "./parser/gocad";
+export { GeoJsonParser } from "./parser/geojson";

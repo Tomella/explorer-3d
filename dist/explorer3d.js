@@ -1062,6 +1062,7 @@ var Shaders = (function () {
 
 var World = (function () {
     function World(container, options) {
+        if (options === void 0) { options = {}; }
         this.options = {
             camera: {
                 fov: 45,
@@ -1102,7 +1103,7 @@ var World = (function () {
             }
         };
         this.lights = [];
-        this.options = deepMerge(this.options, options ? options : {});
+        this.options = deepMerge(this.options, options);
         var rect = document.body.getBoundingClientRect();
         if (typeof container === "string") {
             this.container = document.getElementById("" + container);
@@ -1137,6 +1138,7 @@ var World = (function () {
         this.resizer = THREEExt.WindowResize(this.renderer, this.camera, this.container);
         var context = this;
         this.continueAnimation = true;
+        this.resizer.trigger();
         animate();
         function animate() {
             if (!context.continueAnimation)
@@ -1343,6 +1345,338 @@ var World = (function () {
     return World;
 }());
 
+var DefaultWorldFactory = (function (_super) {
+    __extends(DefaultWorldFactory, _super);
+    function DefaultWorldFactory() {
+        _super.call(this);
+        this.state = {
+            world: null,
+            dataContainer: null,
+            get isAllVisible() {
+                if (this.state.world && this.state.world.scene) {
+                    return !this.state.dataContainer.children.some(function (layer) {
+                        return !layer.visible;
+                    });
+                }
+            }
+        };
+    }
+    DefaultWorldFactory.prototype.show = function (data) {
+        if (!this.state.dataContainer) {
+            return this.create(data);
+        }
+        else {
+            return this.extend(data);
+        }
+    };
+    DefaultWorldFactory.prototype.create = function (data) {
+        var state = this.state;
+        var container = new THREE.Object3D();
+        container.add(data);
+        state.dataContainer = container;
+        var box = new THREE.Box3().setFromObject(data);
+        var center = box.getCenter();
+        data.userData.center = center;
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 4;
+        var options = {
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                },
+                labels: {
+                    x: " East ",
+                    y: " North ",
+                    z: " Elevation "
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                up: {
+                    x: 0,
+                    y: 0,
+                    z: 1
+                },
+                position: {
+                    x: center.x,
+                    y: center.y - 3 * radius,
+                    z: center.z + radius
+                },
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: radius,
+                        dz: z
+                    }
+                }
+            }
+        };
+        if (state.world) {
+            state.world.destroy();
+            state.world = null;
+        }
+        state.world = new World(this.element, options);
+        // window["world"] = state.world;
+        this.add(this.state.dataContainer);
+        this.dispatchEvent({
+            type: "world.created",
+            world: state.world
+        });
+        return state.world;
+    };
+    DefaultWorldFactory.prototype.add = function (obj3d) {
+        this.state.world.scene.add(obj3d);
+        this.state.world.dataContainer = obj3d;
+    };
+    DefaultWorldFactory.prototype.extend = function (data) {
+        var center = new THREE.Box3().setFromObject(data).getCenter();
+        data.userData.center = center;
+        this.state.dataContainer.add(data);
+        var box = new THREE.Box3().setFromObject(this.state.dataContainer);
+        center = box.getCenter();
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 4;
+        var options = {
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                },
+                labels: {
+                    x: " East ",
+                    y: " North ",
+                    z: " Elevation "
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                up: {
+                    x: 0,
+                    y: 0,
+                    z: 1
+                },
+                position: {
+                    x: center.x,
+                    y: center.y - 3 * radius,
+                    z: center.z + radius
+                },
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: -radius,
+                        dz: z
+                    }
+                }
+            }
+        };
+        this.state.world.update(options);
+        return this.state.world;
+    };
+    return DefaultWorldFactory;
+}(THREE.EventDispatcher));
+
+var VerticalExagerate = (function () {
+    function VerticalExagerate(eventdispatcher) {
+        var _this = this;
+        this.eventdispatcher = eventdispatcher;
+        this.callbacks = [];
+        eventdispatcher.addEventListener('world.created', function (event) {
+            console.log("world created");
+            console.log(event);
+            _this.world = event.world;
+            _this.flushCallbacks();
+        });
+    }
+    VerticalExagerate.prototype.flushCallbacks = function () {
+        var _this = this;
+        if (this.callbacks) {
+            this.callbacks.forEach(function (fn) {
+                fn(_this.world);
+            });
+            this.callbacks = [];
+        }
+    };
+    VerticalExagerate.prototype.onReady = function (callback) {
+        if (this.world) {
+            callback(this.world);
+        }
+        else {
+            this.callbacks.push(callback);
+        }
+        return this;
+    };
+    VerticalExagerate.prototype.set = function (value) {
+        this.world.dataContainer.scale.z = value;
+    };
+    VerticalExagerate.prototype.get = function () {
+        return this.world.dataContainer.scale.z;
+    };
+    return VerticalExagerate;
+}());
+
+var FileDrop = (function () {
+    function FileDrop(element, handler) {
+        if (!handler || typeof handler !== "function") {
+            throw Error("No file handler provided");
+        }
+        if (!element) {
+            throw Error("No element provided");
+        }
+        element.addEventListener("dragenter", dragenter, false);
+        element.addEventListener("dragover", dragover, false);
+        element.addEventListener("drop", drop, false);
+        function dragenter(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            // console.log("dragenter");
+        }
+        function dragover(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            // console.log("dragover");
+        }
+        function drop(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var dt = e.dataTransfer;
+            var files = dt.files;
+            handleFiles(files);
+        }
+        function handleFiles(files) {
+            if (files) {
+                for (var i = 0; i < files.length; i++) {
+                    handler(files.item(i));
+                }
+            }
+        }
+    }
+    return FileDrop;
+}());
+
+var Parser = (function () {
+    function Parser() {
+    }
+    Parser.prototype.getBase = function () {
+        return Parser.workerBase;
+    };
+    Parser.workerBase = "";
+    return Parser;
+}());
+
+var Transformer = (function () {
+    function Transformer() {
+    }
+    Transformer.transform = function (doc) {
+        var response;
+        if (doc.types) {
+            doc.types.forEach(function (type) {
+                if (type.type === "TSurf") {
+                    response = loadTSurf(type);
+                }
+                else if (type.type === "PLine") {
+                    response = loadPLine(type);
+                }
+                else if (type.type === "VSet") {
+                    response = loadVSet(type);
+                }
+            });
+        }
+        else {
+            return null;
+        }
+        response.userData = {
+            header: doc.types[0].header,
+            coordinateSystem: doc.types[0].coordinateSystem
+        };
+        return response;
+    };
+    return Transformer;
+}());
+var ObjWithGeom = (function (_super) {
+    __extends(ObjWithGeom, _super);
+    function ObjWithGeom() {
+        _super.apply(this, arguments);
+    }
+    return ObjWithGeom;
+}(THREE.Object3D));
+
+var GocadParser = (function (_super) {
+    __extends(GocadParser, _super);
+    function GocadParser() {
+        _super.apply(this, arguments);
+    }
+    GocadParser.prototype.parse = function (file, options) {
+        var _this = this;
+        return new Promise(function (resolve) {
+            var worker = new Worker(_this.getBase() + GocadParser.WORKER_NAME);
+            worker.addEventListener("message", function (response) {
+                console.log("worker geojson.js finished");
+                console.log(response.data);
+                resolve(response.data);
+            });
+            worker.postMessage(file);
+        });
+    };
+    GocadParser.WORKER_NAME = "gocad.js";
+    return GocadParser;
+}(Parser));
+
+var GeoJsonParser = (function (_super) {
+    __extends(GeoJsonParser, _super);
+    function GeoJsonParser() {
+        _super.apply(this, arguments);
+    }
+    GeoJsonParser.prototype.parse = function (file, options) {
+        var _this = this;
+        return new Promise(function (resolve) {
+            var worker = new Worker(_this.getBase() + GeoJsonParser.WORKER_NAME);
+            worker.addEventListener("message", function (response) {
+                console.log("worker geojson.js finished");
+                console.log(response.data);
+                resolve(response.data);
+            });
+            worker.postMessage(file);
+        });
+    };
+    GeoJsonParser.WORKER_NAME = "geojson.js";
+    return GeoJsonParser;
+}(Parser));
+
 exports.loadBorders = loadBorders;
 exports.loadBstones = loadBstones;
 exports.TSurfLoader = TSurfLoader;
@@ -1350,7 +1684,13 @@ exports.loadPLine = loadPLine;
 exports.loadTSurf = loadTSurf;
 exports.loadVSet = loadVSet;
 exports.Shaders = Shaders;
-exports.World = World;
+exports.DefaultWorldFactory = DefaultWorldFactory;
+exports.VerticalExagerate = VerticalExagerate;
+exports.FileDrop = FileDrop;
+exports.Parser = Parser;
+exports.Transformer = Transformer;
+exports.GocadParser = GocadParser;
+exports.GeoJsonParser = GeoJsonParser;
 exports.CoordinateSystem = CoordinateSystem;
 exports.Document = Document;
 exports.PLine = PLine;

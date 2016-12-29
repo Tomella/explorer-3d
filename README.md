@@ -23,7 +23,7 @@ Core technologies are:
 
 
 ## Typescript definitions.
-No typings! We use the modern way (at this time, anyway) way of including typescript definitions, that is NPM. See package.json
+No typings! We use the modern way (at this time, anyway) way of including typescript definitions, that is NPM. See package.json for the "@types"
 
 ## Unit testing
 Not my strong point. If interested you can do a push request. Maybe I'll learn something.

@@ -1,3 +1,4 @@
+/// <reference path="../external.d.ts" />
 import { deepMerge } from "../libs";
 
 export class World  {
@@ -54,8 +55,8 @@ export class World  {
    renderer: THREE.Renderer;
    resizer: any;
 
-   constructor(container: HTMLElement|string, options?: any) {
-      this.options = deepMerge(this.options, options ? options : {});
+   constructor(container: HTMLElement|string, options: any = {}) {
+      this.options = deepMerge(this.options, options);
 
       let rect = document.body.getBoundingClientRect();
       if ( typeof container === "string") {
@@ -96,6 +97,7 @@ export class World  {
       let context = this;
       this.continueAnimation = true;
 
+      this.resizer.trigger();
       animate();
       function animate() {
          if (!context.continueAnimation) return;

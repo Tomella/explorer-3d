@@ -1,4 +1,4 @@
-importScripts('../lib.js',
+importScripts('../libs.js',
    '../resources/proj4.js');
 
 (function(context) {
@@ -8,7 +8,7 @@ importScripts('../lib.js',
       var options = e.data.options;
       var projectionFn = passThru;
 
-      if(options && options.from && options.to) {
+      if(options && options.from && options.to && options.from !== options.to) {
          projectionFn = reproject(options.from, options.to);
       }
       var name = file.name;
@@ -16,16 +16,9 @@ importScripts('../lib.js',
 
       reader.onload = function(e) {
          try {
-            var document = new gocad.Document(new gocad.util.LineReader(e.target.result), projectionFn);
-            debugger
+            var document = new Explorer3d.Document(new Explorer3d.LineReader(e.target.result), projectionFn);
             document.types.forEach(function(type) {
-               if(type.type == "TSurf") {
-                  context.postMessage({type: "IncrementalTSurf", state: "header", data:type.header});
-                  context.postMessage({type: "IncrementalTSurf", state: "vertices", data:type.vertices});
-                  context.postMessage({type: "IncrementalTSurf", state: "faces", data:type.faces});
-               } else {
-                  context.postMessage({type: "Other", state: "all", data:type});
-               }
+               context.postMessage(document);
             });
             //context.postMessage(document);
             document = null;
