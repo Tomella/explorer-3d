@@ -43,6 +43,46 @@ body {
     border: 2px solid gray;
 }
 
+#helpPanel {
+   padding: 5px;
+   z-index: 2;
+   position: fixed;
+   height: 18px;
+   width: 20px;
+   left: 5px;
+   bottom: 3px;
+   -webkit-transition: height 1s; /* Safari */
+   transition: height 1s;
+}
+
+#helpPanel.open {
+   height: 280px;
+   width: 340px;
+   background-color: #e8e8e8;
+   border: 1px solid gray;
+}
+
+.showButton, .hideButton {
+   float: right;
+}
+
+#helpPanel.open .showButton {
+   display: none;
+}
+
+#helpPanel:not(.open) .hideButton {
+   display:none;
+}
+
+#helpPanel.open span, #helpPanel:not(.open) div {
+   opacity: 1;
+   font-size: 16px;
+}
+#helpPanel:not(.open) span, #helpPanel:not(.open) div {
+   opacity: 0;
+   font-size: 0;
+}
+
 .layer {
    clear: both;
    margin:0;
@@ -58,6 +98,7 @@ body {
    padding-top: 3px;
    padding-bottom: 3px;
 }
+
 .crossButton {
    float: right;
 }

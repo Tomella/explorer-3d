@@ -5,6 +5,7 @@
 
    <meta charset='UTF-8'>
    <meta name="robots" content="noindex">
+   <title>Gocad API Usage Example</title>
    <link href="simple.css" rel="stylesheet" type="text/css"></link>
 </head>
 
@@ -55,6 +56,29 @@
    </div>
    <div id="target"></div>
    <div id="objectsList"></div>
+
+   <div id="helpPanel" class="open">
+      <button class="showButton" onclick="this.parentElement.className = 'open'">?</button>
+      <button class="hideButton" onclick="this.parentElement.className = ''">-</button>
+      <span><strong>Help</strong></span>
+      <br/>
+      <div class="helpText">
+         <p>
+         From a file explorer, drag Gocad files that contain points, lines or
+         surfaces onto the drop panel. Gocad files of type points, lines or surfaces
+         usually have the file extension of <code>vs, pl</code> and <code>ts</code> respectively.
+         </p>
+         <strong>Navgation Keys</strong>
+         <ul>
+            <li>A - Rotate anticlockwise</li>
+            <li>D - Rotate clockwise</li>
+            <li>W - Zoom in (also left mouse button)</li>
+            <li>S - Zoom out (also right mouse button)</li>
+            <li>R - Tilt towards</li>
+            <li>F - Tilt away</li>
+         </ul>
+      </div>
+   </div>
 
 <!-- Stuff we didn't write-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.js"></script>
