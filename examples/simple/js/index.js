@@ -69,7 +69,12 @@
       let target = dom.objectsList;
       target.innerHTML = "";
       target.className = "";
-      event.objects.forEach(obj => {
+      console.log(event.objects)
+      event.objects.sort((a, b) => {
+         a.geometry.computeBoundingSphere();
+         b.geometry.computeBoundingSphere();
+         return b.geometry.boundingSphere.center.z - a.geometry.boundingSphere.center.z
+      }).forEach(obj => {
          let template = document.createElement("div");
          template.className = "layer";
          let color = obj.material.color.getStyle();
