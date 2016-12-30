@@ -69,7 +69,7 @@
       let target = dom.objectsList;
       target.innerHTML = "";
       target.className = "";
-      console.log(event.objects)
+      // sort by center z value
       event.objects.sort((a, b) => {
          a.geometry.computeBoundingSphere();
          b.geometry.computeBoundingSphere();
