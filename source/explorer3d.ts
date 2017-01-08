@@ -1,7 +1,6 @@
 export * from "./libs";
 export { loadBorders } from "./bridge3js/borders";
 export { loadBstones } from "./bridge3js/bstone";
-export { TSurfLoader } from "./bridge3js/inctsurf";
 
 export { loadPLine } from "./bridge3js/pline";
 export { loadTSurf } from "./bridge3js/tsurf";
@@ -16,4 +15,7 @@ export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";
 export { Transformer }  from "./transformer/transform";
 export { GocadParser }  from "./parser/gocad";
+export { GocadPusherParser }  from "./parser/gocadpusher";
+export { LocalGocadPusherParser }  from "./parser/localgocadpusher";
+export { ThrottleProxyParser }  from "./parser/throttleproxyparser";
 export { GeoJsonParser } from "./parser/geojson";

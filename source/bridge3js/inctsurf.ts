@@ -1,4 +1,7 @@
-import { TSurf, Document, Header, CoordinateSystem } from "../libs";
+import { TSurf } from "../gocad/tsurf";
+import { Document } from "../gocad/document";
+import { Header } from "../gocad/header";
+import { CoordinateSystem } from "../gocad/coordinatesystem";
 import { loadBstones } from "./bstone";
 import { loadBorders } from "./borders";
 
@@ -33,8 +36,7 @@ export class TSurfLoader {
 
    setFaces(faces: number[][]) {
       faces.forEach((face: number[]) => {
-         // GOCAD indexes with a base of 1. Normalize.
-         this.geometry.faces.push(new THREE.Face3(face[0] - 1, face[1] - 1, face[2] - 1));
+         this.geometry.faces.push(new THREE.Face3(face[0], face[1], face[2]));
       });
    }
 

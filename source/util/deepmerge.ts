@@ -1,4 +1,3 @@
-
 export function deepMerge(target: any, source: any) {
    let array = Array.isArray(source);
    let dst: any = array && [] || {};

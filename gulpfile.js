@@ -6,7 +6,7 @@ var rollup = require('rollup-stream');
 var rollupTypescript = require('rollup-plugin-typescript');
 var source = require('vinyl-source-stream');
 var sourcemaps = require('gulp-sourcemaps');
-var ts = require('gulp-typescript');
+var ts = require('typescript');
 var tslint = require("gulp-tslint");
 var uglify = require('gulp-uglify');
 
@@ -24,7 +24,7 @@ gulp.task('libs', function() {
   return rollup({
       entry: './source/libs.ts',
       plugins: [
-         rollupTypescript()
+         rollupTypescript({typescript:ts})
       ],
 		format: 'umd',
 		moduleName: 'Explorer3d',
@@ -37,7 +37,7 @@ gulp.task('build', function() {
   return rollup({
       entry: './source/explorer3d.ts',
       plugins: [
-         rollupTypescript()
+         rollupTypescript({typescript:ts})
       ],
 		format: 'umd',
 		moduleName: 'Explorer3d',
@@ -61,7 +61,7 @@ gulp.task('resources', function () {
       .pipe(gulp.dest(RESOURCES_BASE));
 });
 
-gulp.task('examples', ['dist', 'resources']);
+gulp.task('examples',  ['build', 'libs', 'workers', 'resources']);// ['dist', 'resources']);
 
 gulp.task("tslint", function() {
     return gulp.src("source/**/*.ts")

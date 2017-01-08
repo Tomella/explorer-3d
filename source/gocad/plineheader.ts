@@ -1,15 +1,6 @@
-import * as util from "../util/linereader";
-import * as head from "./header";
+import { Header } from "./header";
 
-export class PLineHeader extends head.Header {
-
+export class PLineHeader extends Header {
    public paintedVariable: boolean;
    public color: number;
-
-   constructor(reader: util.LineReader) {
-      super(reader);
-      this.paintedVariable = this.values["*painted*variable"];
-      let color = this.values["*line*color"];
-      this.color = color ? this.toColor(color) : 0x0000ff;
-   }
 }

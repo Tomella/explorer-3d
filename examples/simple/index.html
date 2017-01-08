@@ -6,7 +6,7 @@
    <meta charset='UTF-8'>
    <meta name="robots" content="noindex">
    <title>Gocad API Usage Example</title>
-   <link href="simple.css" rel="stylesheet" type="text/css"></link>
+   <link href="simple.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
@@ -25,7 +25,7 @@
          </select>
          <span style="border-left: 1px solid darkgray;padding-left: 7px">
             Labels on/off:
-            <input type="checkbox" id="labelSwitch" checked="checked"></input>
+            <input type="checkbox" id="labelSwitch" checked="checked">
          </span>
       </span>
 
@@ -57,7 +57,7 @@
    <div id="target"></div>
    <div id="objectsList"></div>
 
-   <div id="helpPanel" class="open">
+   <div id="helpPanel" >
       <button class="showButton" onclick="this.parentElement.className = 'open'">?</button>
       <button class="hideButton" onclick="this.parentElement.className = ''">-</button>
       <span><strong>Help</strong></span>
@@ -77,12 +77,16 @@
             <li>R - Tilt towards</li>
             <li>F - Tilt away</li>
          </ul>
+         <strong>Warning</strong> We don't know what your environment is capable of.
+         Very large files (&gt;100 MB) may crash your browser. Some browsers and machines
+         are capable of even larger (&gt;200 MB) but that's an experiment for you.
       </div>
    </div>
 
 <!-- Stuff we didn't write-->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.15/proj4.js"></script>
+<script src="/dist/resources/polyfills.js"></script>
 <script src="/dist/resources/three/lut.js"></script>
 <script src="/dist/resources/three/orbitcontrols.js"></script>
 <script src="/dist/resources/three/flycontrols.js"></script>

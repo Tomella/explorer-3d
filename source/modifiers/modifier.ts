@@ -1,32 +1,32 @@
 import { EventDispatcher } from "../util/eventdispatcher";
 
 export abstract class Modifier {
-   protected world;
+   protected factory;
    private callbacks: Function[] = [];
 
    constructor (public eventdispatcher: EventDispatcher) {
       eventdispatcher.addEventListener("world.created", (event) => {
-         this.world = event.world;
-         this.flushCallbacks(event.world);
+         this.factory = event.factory;
+         this.flushCallbacks(event.factory);
       });
 
       eventdispatcher.addEventListener("world.destroyed", (event) => {
-         this.world = null;
+         this.factory = null;
          this.flushCallbacks(null);
       });
    }
 
-   private flushCallbacks(world) {
+   private flushCallbacks(factory) {
       if (this.callbacks) {
          this.callbacks.forEach(fn => {
-            fn(world);
+            fn(factory);
          });
          this.callbacks = [];
       }
    }
 
    onChange (callback) {
-      setTimeout(() => callback(this.world));
+      setTimeout(() => callback(this.factory));
       this.callbacks.push(callback);
       return this;
    }

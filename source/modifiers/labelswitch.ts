@@ -6,14 +6,14 @@ export class LabelSwitch extends Modifier {
       value ? this.on() : this.off();
    }
    on () {
-      if (this.world) {
-         this.world.labels.visible = true;
+      if (this.factory && this.factory.getWorld()) {
+         this.factory.getWorld().labels.visible = true;
       }
    }
 
    off () {
-      if (this.world) {
-         this.world.labels.visible = false;
+      if (this.factory && this.factory.getWorld()) {
+         this.factory.getWorld().labels.visible = false;
       }
    }
 }

@@ -2,13 +2,19 @@ import { loadTSurf } from "../bridge3js/tsurf";
 import { loadPLine } from "../bridge3js/pline";
 import { loadVSet }  from "../bridge3js/vset";
 
+import { Document }  from "../gocad/document";
+import { Type }  from "../gocad/type";
+import { TSurf }  from "../gocad/tsurf";
+import { PLine }  from "../gocad/pline";
+import { VSet }  from "../gocad/vset";
+
 export class Transformer {
 
-   static transform(doc: gocad.Document): THREE.Object3D {
+   static transform(doc: Document): THREE.Object3D {
       let response: THREE.Object3D;
 
       if (doc.types) {
-         doc.types.forEach((type: gocad.Type) => {
+         doc.types.forEach((type: Type) => {
             if (type.type === "TSurf") {
                response = loadTSurf(<TSurf>type);
             } else if (type.type === "PLine") {

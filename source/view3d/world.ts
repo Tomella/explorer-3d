@@ -1,7 +1,7 @@
 /// <reference path="../external.d.ts" />
-import { deepMerge } from "../libs";
+import { deepMerge } from "../util/deepmerge";
 
-export class World  {
+export class World {
    private options: any = {
       camera: {
          fov: 45,
@@ -23,18 +23,18 @@ export class World  {
             color: 0x555555
          },
          directional: {
-           color: 0xa0a0a0,
-           center: {
-             x: 0,
-             y: 0,
-             z: 0
-           },
-           position: {
-             dx: 50,
-             dy: 10,
-             dz: - 300
-           }
-        }
+            color: 0xa0a0a0,
+            center: {
+               x: 0,
+               y: 0,
+               z: 0
+            },
+            position: {
+               dx: 50,
+               dy: 10,
+               dz: - 300
+            }
+         }
       },
       axisHelper: {
          on: true,
@@ -55,17 +55,17 @@ export class World  {
    renderer: THREE.Renderer;
    resizer: any;
 
-   constructor(container: HTMLElement|string, options: any = {}) {
+   constructor(container: HTMLElement | string, options: any = {}) {
       this.options = deepMerge(this.options, options);
 
       let rect = document.body.getBoundingClientRect();
-      if ( typeof container === "string") {
+      if (typeof container === "string") {
          this.container = document.getElementById("" + container);
       } else {
          this.container = <HTMLElement>container;
       }
       this.scene = new THREE.Scene();
-      this.renderer = new THREE.WebGLRenderer({clearColor: 0xff0000});
+      this.renderer = new THREE.WebGLRenderer({ clearColor: 0xff0000 });
 
       this.renderer.setSize(rect.width, rect.height);
 
@@ -108,6 +108,28 @@ export class World  {
          context.renderer.render(context.scene, context.camera);
          context.controls.update(0.02);
       }
+   }
+
+   destroy(): void {
+      this.lights = [];
+      this.axis = null;
+      this.renderer.dispose();
+      this.renderer = null;
+      this.dataContainer.children.forEach(child => {
+         child.geometry.dispose();
+         child.material.dispose();
+      });
+      this.scene.remove(this.dataContainer);
+      this.scene = null;
+      this.camera = null;
+      if (this.controls.dispose) {
+         this.controls.dispose();
+      }
+      this.controls = null;
+      this.resizer.destroy();
+      this.resizer = null;
+      while (this.container.lastChild) this.container.removeChild(this.container.lastChild);
+      this.continueAnimation = false;
    }
 
    resize(options: any) {
@@ -153,15 +175,6 @@ export class World  {
 
    }
 
-   destroy(): void {
-     this.renderer.domElement.addEventListener("dblclick", null, false); // remove listener to render
-     this.scene = null;
-     this.camera = null;
-     this.controls = null;
-     while (this.container.lastChild) this.container.removeChild(this.container.lastChild);
-     this.continueAnimation = false;
-   }
-
    private addLabels(scale: number): THREE.Object3D {
       if (this.labels) {
          this.scene.remove(this.labels);
@@ -192,7 +205,7 @@ export class World  {
 
       return container;
 
-      function makeTextSprite( message: string, parameters: any): THREE.Sprite {
+      function makeTextSprite(message: string, parameters: any): THREE.Sprite {
          let parms = deepMerge({
             fontface: "Arial",
             fontsize: 18,
@@ -206,30 +219,30 @@ export class World  {
          context.font = parms.fontsize + "px " + parms.fontface;
 
          // get size data (height depends only on font size)
-         let metrics = context.measureText( message );
+         let metrics = context.measureText(message);
          let textWidth = metrics.width;
          // console.log(textWidth);
 
          // background color
          context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","
-                          + parms.backgroundColor.b + "," + parms.backgroundColor.a + ")";
+            + parms.backgroundColor.b + "," + parms.backgroundColor.a + ")";
          // border color
          context.strokeStyle = "rgba(" + parms.borderColor.r + "," + parms.borderColor.g + ","
-                          + parms.borderColor.b + "," + parms.borderColor.a + ")";
+            + parms.borderColor.b + "," + parms.borderColor.a + ")";
 
          context.lineWidth = parms.borderThickness;
          roundRect(context,
-               parms.borderThickness / 2,
-               parms.borderThickness / 2,
-               textWidth + parms.borderThickness,
-               parms.fontsize * 1.4 + parms.borderThickness,
-               6
+            parms.borderThickness / 2,
+            parms.borderThickness / 2,
+            textWidth + parms.borderThickness,
+            parms.fontsize * 1.4 + parms.borderThickness,
+            6
          );
          // 1.4 is extra height factor for text below baseline: g,j,p,q.
 
          // text color
          context.fillStyle = "rgba(0, 0, 0, 1.0)";
-         context.fillText( message, parms.borderThickness, parms.fontsize + parms.borderThickness);
+         context.fillText(message, parms.borderThickness, parms.fontsize + parms.borderThickness);
 
          // canvas contents will be used for a texture
          let texture = new THREE.Texture(canvas);
@@ -238,7 +251,7 @@ export class World  {
          let spriteMaterial = new THREE.SpriteMaterial({
             map: texture
          });
-         let sprite = new THREE.Sprite( spriteMaterial );
+         let sprite = new THREE.Sprite(spriteMaterial);
          sprite.scale.set(scale * 35, scale * 15, 1); // scale * 1);
 
          return sprite;
@@ -285,7 +298,7 @@ export class World  {
    }
 
    private addControls() {
-      this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+      this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
       // this.controls.addEventListener( 'change', render ); // add this only if there is no animation loop (requestAnimationFrame)
       this.controls.enableDamping = true;
       this.controls.dampingFactor = 0.25;
@@ -294,7 +307,7 @@ export class World  {
    };
 
    private addFirstPersonControls() {
-      this.controls = new THREE.FirstPersonControls( this.camera, this.renderer.domElement );
+      this.controls = new THREE.FirstPersonControls(this.camera, this.renderer.domElement);
       // this.controls.movementSpeed = this.options.radius;
       // this.controls.domElement = this.container;
       // this.controls.rollSpeed = Math.PI * 24 * this.options.radius;
@@ -304,7 +317,7 @@ export class World  {
 
 
    private addFlyControls() {
-      this.controls = new THREE.FlyControls( this.camera, this.renderer.domElement );
+      this.controls = new THREE.FlyControls(this.camera, this.renderer.domElement);
       this.controls.movementSpeed = this.options.radius;
       this.controls.domElement = this.container;
       this.controls.rollSpeed = Math.PI * 24;
@@ -319,13 +332,13 @@ export class World  {
 
       let dir = data.directional;
 
-      this.lights[1] = new THREE.DirectionalLight( dir.color);
-      this.lights[1].position.set( dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z + dir.position.dz);
-      this.scene.add( this.lights[1] );
+      this.lights[1] = new THREE.DirectionalLight(dir.color);
+      this.lights[1].position.set(dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z + dir.position.dz);
+      this.scene.add(this.lights[1]);
 
-      this.lights[2] = new THREE.DirectionalLight( dir.color);
-      this.lights[2].position.set( dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z - dir.position.dz);
-      this.scene.add( this.lights[2] );
+      this.lights[2] = new THREE.DirectionalLight(dir.color);
+      this.lights[2].position.set(dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z - dir.position.dz);
+      this.scene.add(this.lights[2]);
    };
 
    private updateLights() {

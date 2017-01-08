@@ -1,4 +1,4 @@
-import { TSurf } from "../libs";
+import { TSurf } from "../gocad/tsurf";
 
 export function loadBstones(tsurf: TSurf): THREE.Object3D {
    let geometry = new THREE.Geometry();

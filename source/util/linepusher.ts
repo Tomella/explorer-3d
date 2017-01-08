@@ -1,68 +1,91 @@
 export class LinePusher {
-   private PAGE_SIZE = 1048576; // A mb at a time should be harmless
-   private file: File;
-   private handler: Function;
-   private errorHandler: Function;
-   private pages: string[];
+   private PAGE_SIZE = 4 * 1024 * 1024; // A 16 KB at a time should be harmless
    private pageNo: number;
    private index: number;
    private length: number;
+   private buffer: string;
    private lineBuffer: string[];
+   private reader: FileReader;
 
-   constructor(file: File, handler: Function, errorHandler: Function) {
+   constructor(public file: File, public callback: Function) {
       this.file = file;
       this.length = file.size;
-      this.handler = handler;
-      this.errorHandler = errorHandler;
-      this.pageNo = this.index = 0;
+      this.pageNo = -1;
+      this.index = 0;
+      this.reader = new FileReader();
       this.lineBuffer = [];
-      this.process();
+      this.start();
    }
 
-   private process() {
-      this.readPage();
+   async start() {
+      // Prime the first read
+      let result = await this.read();
+
+      while (result) {
+         let lineResult = this.next();
+         switch (lineResult.state) {
+            case "more":
+               result = await this.read();
+               break;
+            case "line":
+               this.callback(lineResult.line);
+               break;
+            case "complete":
+               this.callback(lineResult.line);
+               result = false;
+               break;
+         }
+      }
    }
 
-   private readPage() {
+   async read() {
+      this.pageNo++;
+      this.index = 0;
+      let self = this;
       let start = this.pageNo * this.PAGE_SIZE;
-      if (start >= this.length) {
-         this.complete();
-      }
-      let reader = new FileReader();
-      let blob = this.file.slice(start, start + this.PAGE_SIZE);
-      reader.onloadend = (evt) => {
-         if (evt.target["readyState"] === FileReader.prototype.DONE) { // DONE == 2
-            let text = evt.target["result"];
-            processBlock(text);
-            // We've finished the block get ready for the next
-            this.pageNo++;
-            this.readPage();
-         }
-      };
-      reader.readAsText(blob);
 
-      function processBlock(text: string) {
-         for (let i = 0; i < text.length; i++) {
-            let char = text[this.index];
-            if (char === "\r") {
-               continue;
-            }
-            if (char === "\n") {
-               this.handler(this.lineBuffer.join(""));
-               this.lineBuffer = [];
-               continue;
-            }
-            this.lineBuffer.push(text[i]);
+      let blob = this.file.slice(start, start + this.PAGE_SIZE);
+
+      this.reader.readAsText(blob);
+      return new Promise<boolean>(resolve => {
+         if (start >= this.length) {
+            resolve(false);
+            return;
          }
-      }
+
+         self.reader.onloadend = (evt) => {
+            if (evt.target["readyState"] === FileReader.prototype.DONE) { // DONE == 2
+               // console.log("Reading page " + self.pageNo);
+               self.buffer = evt.target["result"];
+               resolve(this.hasMore());
+            }
+         };
+      });
    }
 
-   private complete() {
-      if (this.lineBuffer.length) {
-         // flush last line
-         this.handler(this.lineBuffer.join(""));
+   private hasMore() {
+      return this.index + this.PAGE_SIZE * this.pageNo < this.length - 1;
+   }
+
+   private next(): any {
+      while (this.hasMore()) {
+         if (!this.buffer || this.index >= this.PAGE_SIZE)  {
+            return {state: "more"};
+         }
+         let char = this.buffer[this.index++];
+         if (char === "\r") {
+            continue;
+         }
+         if (char === "\n") {
+            break;
+         }
+         this.lineBuffer.push(char);
       }
-      // Send null to terminate
-      this.handler(null);
+      let line = this.lineBuffer.join("");
+      this.lineBuffer = [];
+      return {
+         state: this.hasMore() ? "line" : "complete",
+         line: line
+      };
    }
 }

@@ -1,11 +1,6 @@
-import * as head from "./header";
-import * as util from "../util/linereader";
+import { toColor } from "../util/tocolor";
+import { Header } from "./header";
 
-export class VSetHeader extends head.Header {
+export class VSetHeader extends Header {
    public color: number;
-
-   constructor(reader: util.LineReader) {
-      super(reader);
-      this.color = this.toColor(<string>this.values["*atoms*color"]);
-   }
 }

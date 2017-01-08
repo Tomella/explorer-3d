@@ -13,18 +13,15 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
       }
    };
 
-   public element: HTMLElement;
-
-   constructor() {
+   constructor(public element: HTMLElement) {
       super();
    }
 
-   destroy() {
-      let state = this.state;
-      if (state.world) {
-         state.world.destroy();
-         state.world = null;
-         state.dataContainer = null;
+   destroy(): void {
+      if (this.state.world) {
+         this.state.world.destroy();
+         this.state.world = null;
+         this.state.dataContainer = null;
          this.dispatchEvent({
             type: "objects.changed",
             objects: []
@@ -99,26 +96,23 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
       this.state.world.resize(options);
    }
 
-   public show(data: THREE.Object3D): World {
-      let results;
+   public show(data: THREE.Object3D): void {
       if (!this.state.dataContainer) {
-         results = this.create(data);
+         this.create(data);
       } else {
-         results = this.extend(data);
+         this.extend(data);
       }
 
       this.dispatchEvent({
          type: "objects.changed",
          objects: this.state.dataContainer.children
       });
-      return results;
    }
 
-   public create(data: THREE.Object3D): World {
-      let state = this.state;
-      let container = new THREE.Object3D();
-      container.add(data);
-      state.dataContainer = container;
+   public create(data: THREE.Object3D): void {
+      this.state.dataContainer = new THREE.Object3D();
+      this.state.dataContainer.add(data);
+
       let box = new THREE.Box3().setFromObject(data);
       let center = box.getCenter();
       data.userData.center = center;
@@ -174,18 +168,20 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
             }
          }
       };
-      if (state.world) {
-         state.world.destroy();
-         state.world = null;
+      if (this.state.world) {
+         this.state.world.destroy();
       }
-      state.world = new World(this.element, options);
+      this.state.world = new World(this.element, options);
       // window["world"] = state.world;
       this.add(this.state.dataContainer);
       this.dispatchEvent({
          type: "world.created",
-         world: state.world
+         factory: this
       });
-      return state.world;
+   }
+
+   public getWorld() {
+      return this.state.world;
    }
 
    public add(obj3d: THREE.Object3D) {
@@ -193,7 +189,7 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
       this.state.world.dataContainer = obj3d;
    }
 
-   public extend(data: THREE.Object3D): World {
+   public extend(data: THREE.Object3D): void {
       let center = new THREE.Box3().setFromObject(data).getCenter();
       data.userData.center = center;
       this.state.dataContainer.add(data);
@@ -252,6 +248,5 @@ export class DefaultWorldFactory extends THREE.EventDispatcher {
          }
       };
       this.state.world.update(options);
-      return this.state.world;
    }
 }

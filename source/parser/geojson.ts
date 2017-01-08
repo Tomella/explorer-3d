@@ -1,5 +1,9 @@
 import { Parser } from "./parser";
-
+/**
+ * Parse GeoJSON into our canonical form.
+ * WARNING: Not fully working. Last I remember it was just
+ * for point clouds.
+ */
 export class GeoJsonParser extends Parser {
    static WORKER_NAME = "geojson.js";
 
@@ -12,6 +16,5 @@ export class GeoJsonParser extends Parser {
          });
          worker.postMessage(file);
       });
-
    }
 }
