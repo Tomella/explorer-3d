@@ -5,7 +5,6 @@ import { Header } from "../gocad/header";
 import { PLineHeader } from "../gocad/plineheader";
 
 export class PLineHeaderPusher extends HeaderPusher {
-
    public plineHeader: PLineHeader;
    public color: number;
 
