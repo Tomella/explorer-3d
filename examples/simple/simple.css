@@ -13,7 +13,7 @@ body {
    position: absolute;
    top: 35px;
    left: 5px;
-   height: 100px;
+   height: 106px;
    width: 220px;
    z-index: 1;
    background-color: #eeeeee;
@@ -99,11 +99,11 @@ body {
 }
 
 .layerspan {
-    display: inline-block;
-    white-space: nowrap;
-    width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+   float: left;
+   white-space: nowrap;
+   width: 240px;
+   overflow: hidden;
+   text-overflow: ellipsis;
 }
 
 .crossButton {
