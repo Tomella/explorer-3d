@@ -26,7 +26,6 @@ declare namespace THREE {
       autoForward: boolean;
    }
 
-
    export class ZOrbitControls {
       constructor(camera: THREE.Camera, element: HTMLElement);
       update(): void;
@@ -40,10 +39,6 @@ declare namespace THREE {
       setMin(min: number): void;
       getColor( colorValue: number ): THREE.Color;
    }
-}
-
-declare namespace THREEExt {
-   export function WindowResize(renderer: THREE.Renderer, camera: THREE.Camera, element: HTMLElement): any;
 }
 
 declare class GeotiffParser {
