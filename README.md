@@ -29,7 +29,7 @@ No typings! We use the modern way (at this time, anyway) way of including typesc
 Not my strong point. If interested you can do a push request. Maybe I'll learn something.
 
 ## Integration testing
-The examples directory has a bunch of demo apps and I find it easiest to build in there or extend the existing apps so run:
+The examples directory has a demo app and I find it easiest to build in there or extend the existing apps so run:
 `> node server`
 
 This serves both the content from the `examples` directory as 'http://localhost:3000/' and directly from the `dist` directory as '/dist'
@@ -44,6 +44,15 @@ If you are going to use the library there are CDN repositories for:
 Proj4js allows data stored in different projections to be transformed onto the projection of the viewport.
 
 ThreeJS is the WebGL wrapper that allows 3D rendering in a more abstracted way.
+
+## IE11
+You need promises. You need promises in the web worker. The ES6-PROMISE is bundled as a resource so that the web workers can find the
+location. NB: We don't load the library if in a browser that supports Promises.
+### Problems
+If you are going to support IE11 then there are a few things. It seems to hold onto memory even after the API has cleaned up therefore
+for big data you are better off refreshing the page rather than deleting via the API and start again. It isn't the API
+hanging onto the memory as profiling it shows it is holding nothing it shouldn't be. On my machine it seems to crash around 1.5 GB of
+memory. Obvioulsy that will vary.
 
 ## Where do I find data?
 All the the normal places. Go to the relevant autorities and search on "gocad"
