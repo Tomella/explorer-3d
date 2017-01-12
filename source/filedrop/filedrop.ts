@@ -13,7 +13,6 @@ export class FileDrop {
       element.addEventListener("dragover", dragover, false);
       element.addEventListener("drop", drop, false);
 
-
       function dragenter(e: DragEvent) {
          e.stopPropagation();
          e.preventDefault();
@@ -43,6 +42,5 @@ export class FileDrop {
          }
       }
    }
-
 }
 
