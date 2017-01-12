@@ -17,14 +17,14 @@
     "three.js": "*"
   },
   "ignore": [
-      "**/.*",
-      "node_modules",
-      "examples",
-      "resources",
-      "tests",
-      "source",
-      "docs",
-      "*.json",
-      "*.js"
+    "**/.*",
+    "node_modules",
+    "examples",
+    "resources",
+    "tests",
+    "source",
+    "docs",
+    "*.json",
+    "*.js"
   ]
 }
