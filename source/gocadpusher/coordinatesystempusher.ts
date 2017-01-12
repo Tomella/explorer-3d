@@ -50,7 +50,7 @@ export class CoordinateSystemPusher extends StatePusher<CoordinateSystem> {
             if (index > 0) {
                let name = line.substring(0, index);
                let rest = line.substring(index).trim();
-               let mapper: Function = this.coordinateSystem.typeMap[name] ? this.coordinateSystem.typeMap[name] : function (val: string) { return val; };
+               let mapper: Function = this.coordinateSystem.typeMap[name] ? this.coordinateSystem.typeMap[name] :  (val: string) => val;
                this.coordinateSystem[name] = mapper(rest);
             }
          } else {
