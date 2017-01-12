@@ -1,22 +1,16 @@
 /**
+ * Slightly modified for TypeScript. Also we want it in the domain
  * https://github.com/mrdoob/eventdispatcher.js/
  */
+import { Event } from "../domain/event";
+
 export class EventDispatcher {
-   private _listeners: any;
-
-   constructor() { }
-
-   public apply(object: any) {
-      object.addEventListener = EventDispatcher.prototype.addEventListener;
-      object.hasEventListener = EventDispatcher.prototype.hasEventListener;
-      object.removeEventListener = EventDispatcher.prototype.removeEventListener;
-      object.dispatchEvent = EventDispatcher.prototype.dispatchEvent;
-   }
+   private listeners: any;
 
    public addEventListener(type: string, listener: Function) {
-      if (this._listeners === undefined) this._listeners = {};
+      if (this.listeners === undefined) this.listeners = {};
 
-      let listeners = this._listeners;
+      let listeners = this.listeners;
 
       if (listeners[type] === undefined) {
          listeners[type] = [];
@@ -28,9 +22,9 @@ export class EventDispatcher {
    }
 
    public hasEventListener(type: string, listener: Function) {
-      if (this._listeners === undefined) return false;
+      if (this.listeners === undefined) return false;
 
-      let listeners = this._listeners;
+      let listeners = this.listeners;
 
       if (listeners[type] !== undefined && listeners[type].indexOf(listener) !== - 1) {
          return true;
@@ -39,38 +33,29 @@ export class EventDispatcher {
    }
 
    public removeEventListener(type: string, listener: Function) {
-      if (this._listeners === undefined) return;
+      if (this.listeners === undefined) return;
 
-      let listeners = this._listeners;
-      let listenerArray = listeners[type];
+      let listenerArray = this.listeners[type];
 
       if (listenerArray !== undefined) {
-         let index = listenerArray.indexOf(listener);
-
-         if (index !== - 1) {
-            listenerArray.splice(index, 1);
-         }
+         this.listeners[type] = listenerArray.filter(existing => listener !== existing);
       }
    }
 
-   public dispatchEvent() {
-      let array: any[] = [];
-      return;
+   public dispatchEvent(event: Event) {
+      let listeners = this.listeners;
+      if (listeners === undefined) return;
 
-      function fn(event: any) {
-         if (this._listeners === undefined) return;
-         let listeners = this._listeners;
-         let listenerArray = listeners[event.type];
-         if (listenerArray !== undefined) {
-            event.target = this;
-            let length = listenerArray.length;
-            for (let i = 0; i < length; i++) {
-               array[i] = listenerArray[i];
-            }
-            for (let i = 0; i < length; i++) {
-               array[i].call(this, event);
-            }
-         }
+      let array: any[] = [];
+
+      let listenerArray = listeners[event.type];
+      if (listenerArray !== undefined) {
+         event.target = this;
+         listenerArray.forEach(listener => listener.call(this, event));
       }
+   }
+
+   public removeAllListeners() {
+      this.listeners = undefined;
    }
 }
