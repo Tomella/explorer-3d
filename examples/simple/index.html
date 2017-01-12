@@ -1,18 +1,14 @@
 <!DOCTYPE html>
-<html class=''>
-
+<html>
 <head>
-
    <meta charset='UTF-8'>
    <meta name="robots" content="noindex">
    <title>Gocad API Usage Example</title>
    <link href="simple.css" rel="stylesheet" type="text/css">
 </head>
-
 <body>
-
    <div id="toolbar">
-      <span style="padding-top:6px">
+      <span style="padding-top:6px" title="Set a multiplier of the z-value for the shown datasets">
          Vertical Exageration:
          <select id="exagerate">
             <option value="1">1</option>
@@ -23,7 +19,7 @@
             <option value="64">64</option>
             <option value="128">128</option>
          </select>
-         <span style="border-left: 1px solid darkgray;padding-left: 7px">
+         <span style="border-left: 1px solid darkgray;padding-left: 7px" title='Show/hide the "North", "East" and "Elevation" labels'>
             Labels on/off:
             <input type="checkbox" id="labelSwitch" checked="checked">
          </span>
@@ -35,19 +31,21 @@
    </div>
 
    <!-- The box to drop files on and projection mapping -->
-   <div id="fileDrop" >
+   <div id="fileDrop" title="Select a Gocad file or files of type vertices, lines or surfaces (.vs, .pl or .ts)">
       Drop <br/>
       <strong>GOCAD</strong><br/>
       File(s) <br/>
       Here <br/>
       <br/>
-      <select id="projectFrom">
+      <select id="projectFrom" title="Set source projection">
+         <option value=""></option>
          <option value="EPSG:4326">EPSG:4326</option>
          <option value="EPSG:3112">EPSG:3112</option>
          <option value="EPSG:3857">EPSG:3857</option>
          <option value="EPSG:4283">EPSG:4283</option>
       </select> -->
-      <select id="projectTo">
+      <select id="projectTo" title="Set target projection">
+         <option value=""></option>
          <option value="EPSG:4326">EPSG:4326</option>
          <option value="EPSG:3112">EPSG:3112</option>
          <option value="EPSG:3857">EPSG:3857</option>
@@ -84,14 +82,13 @@
    </div>
 
 <!-- Stuff we didn't write-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.15/proj4.js"></script>
+<script src="/dist/resources/es6-promise.js"></script>
 <script src="/dist/resources/polyfills.js"></script>
 <script src="/dist/resources/three/lut.js"></script>
 <script src="/dist/resources/three/orbitcontrols.js"></script>
 <script src="/dist/resources/three/flycontrols.js"></script>
-<script src="/dist/resources/three/firstpersoncontrols.js"></script>
-<script src="/dist/resources/three/windowresize.js"></script>
 
 <!-- Our API's -->
 <script src="/dist/explorer3d.js"></script>
@@ -99,5 +96,4 @@
 <!-- Our example code -->
 <script src="js/index.js"></script>
 </body>
-
 </html>
