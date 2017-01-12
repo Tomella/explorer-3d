@@ -1,5 +1,6 @@
 /// <reference path="../external.d.ts" />
 import { deepMerge } from "../util/deepmerge";
+import { Resizer } from "../modifiers/resizer";
 
 export class World {
    private options: any = {
@@ -92,12 +93,12 @@ export class World {
       this.addLights();
       // this.addControls();
       this.addFlyControls();
-      this.resizer = THREEExt.WindowResize(this.renderer, this.camera, this.container);
+      this.resizer = new Resizer(this.renderer, this.camera, this.container);
 
       let context = this;
       this.continueAnimation = true;
 
-      this.resizer.trigger();
+      this.resizer.resize();
       animate();
       function animate() {
          if (!context.continueAnimation) return;
@@ -176,7 +177,9 @@ export class World {
    }
 
    private addLabels(scale: number): THREE.Object3D {
+      let visible = true;
       if (this.labels) {
+         visible = this.labels.visible;
          this.scene.remove(this.labels);
       }
       let container = this.labels = new THREE.Object3D();
@@ -202,7 +205,7 @@ export class World {
       sprite.position.set(pos.x, pos.y, pos.z + offset);
       container.add(sprite);
       this.scene.add(container);
-
+      container.visible = visible;
       return container;
 
       function makeTextSprite(message: string, parameters: any): THREE.Sprite {
