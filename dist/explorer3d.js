@@ -1816,7 +1816,7 @@ var World = (function () {
         var offset = this.options.axisHelper.size;
         var labels = this.options.axisHelper.labels;
         var options = {
-            fontsize: 64,
+            fontsize: 54,
             backgroundColor: { r: 255, g: 200, b: 200, a: 0.7 }
         };
         var sprite = makeTextSprite(labels.x, options);
@@ -1836,12 +1836,14 @@ var World = (function () {
         function makeTextSprite(message, parameters) {
             var parms = deepMerge({
                 fontface: "Arial",
-                fontsize: 18,
+                fontsize: 14,
                 borderThickness: 4,
                 borderColor: { r: 0, g: 0, b: 0, a: 1.0 },
                 backgroundColor: { r: 255, g: 255, b: 255, a: 1.0 }
             }, parameters ? parameters : {});
             var canvas = document.createElement("canvas");
+            canvas.width = 256;
+            canvas.height = 128;
             var context = canvas.getContext("2d");
             context.font = parms.fontsize + "px " + parms.fontface;
             // get size data (height depends only on font size)
