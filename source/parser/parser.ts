@@ -1,8 +1,8 @@
 export abstract class Parser {
-   static workerBase = "";
+   static codeBase = "";
 
-   public getBase(): string {
-      return Parser.workerBase;
+   public getWorkersBase(): string {
+      return Parser.codeBase + "/workers/";
    }
 
    abstract parse(file: File, options: any): Promise<any>;
