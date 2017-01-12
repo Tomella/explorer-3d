@@ -1,5 +1,8 @@
 import { TSurf } from "../gocad/tsurf";
 
+/**
+ * Load borders from a TSurf as a seperate entity
+ */
 export function loadBorders(tsurf: TSurf): THREE.Object3D {
    let segments = new THREE.Geometry();
 
