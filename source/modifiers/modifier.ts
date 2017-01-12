@@ -5,6 +5,7 @@ export abstract class Modifier {
    private callbacks: Function[] = [];
 
    constructor (public eventdispatcher: EventDispatcher) {
+
       eventdispatcher.addEventListener("world.created", (event) => {
          this.factory = event.factory;
          this.flushCallbacks(event.factory);
