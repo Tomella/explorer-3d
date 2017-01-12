@@ -1,6 +1,7 @@
 import { flowThru } from "../util/flowthru";
 import { isDataLine } from "../util/linehelper";
 
+import { Logger } from "../util/logger";
 import { Pusher } from "./pusher";
 import { Header } from "../gocad/header";
 
@@ -31,7 +32,7 @@ export class HeaderPusher extends Pusher<Header> {
             mapper = mapper ? mapper : flowThru;
             this.header.values[parts[0]] = mapper(parts[1]);
          } else {
-            console.warn("That doesn't look like a pair: " + line);
+            Logger.warn("That doesn't look like a pair: " + line);
          }
       }
          return true;

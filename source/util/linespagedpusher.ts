@@ -1,4 +1,5 @@
 import { LinesPusher } from "./linespusher";
+import { Logger } from "./logger";
 
 export class LinesPagedPusher implements LinesPusher {
    private blockSize = 16 * 1024; // A bit at a time should be harmless
@@ -34,8 +35,8 @@ export class LinesPagedPusher implements LinesPusher {
                try {
                   this.callback(group);
                } catch (e) {
-                  console.error(e);
-                  console.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
+                  Logger.error(e);
+                  Logger.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
                }
                result = await this.read();
                break;
@@ -48,8 +49,8 @@ export class LinesPagedPusher implements LinesPusher {
                   try {
                      this.callback(lines);
                   } catch (e) {
-                     console.error(e);
-                     console.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
+                     Logger.error(e);
+                     Logger.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
                   }
                }
                result = false;
@@ -63,7 +64,7 @@ export class LinesPagedPusher implements LinesPusher {
       this.index = 0;
       let self = this;
       let start = this.pageNo * this.blockSize;
-      console.log("Block size: " + this.blockSize + ", file size: " + this.length);
+      Logger.log("Block size: " + this.blockSize + ", file size: " + this.length);
       return new Promise<boolean>(resolve => {
          if (start >= this.length) {
             resolve(false);
@@ -71,21 +72,21 @@ export class LinesPagedPusher implements LinesPusher {
          }
          try {
             self.reader.onloadend = (evt) => {
-               console.log("We have loaded with ready state = " + evt.target["readyState"]);
+               Logger.log("We have loaded with ready state = " + evt.target["readyState"]);
                if (evt.target["readyState"] === FileReader.prototype.DONE) { // DONE == 2
-                  console.log("Reading page " + self.pageNo);
+                  Logger.log("Reading page " + self.pageNo);
                   self.buffer = evt.target["result"];
                   resolve(this.hasMore());
                }
             };
             self.reader.onerror = (evt) => {
-               console.log("What do you mean, error");
+               Logger.log("What do you mean, error");
             };
 
             let blob = self.file.slice(start, start + self.blockSize);
             self.reader.readAsText(blob);
          } catch (e) {
-            console.log(e);
+            Logger.log(e);
          }
       });
    }

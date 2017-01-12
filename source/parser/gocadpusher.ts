@@ -1,5 +1,6 @@
 import { Parser } from "./parser";
 import { PipeToThreedObj } from "../push3js/pipetothreedobj";
+import { Logger } from "../util/Logger";
 
 
 export class GocadPusherParser extends Parser {
@@ -22,19 +23,19 @@ export class GocadPusherParser extends Parser {
 
          pipe.addEventListener("error", (event) => {
             worker.terminate();
-            console.log("There is an error with your pipes!");
+            Logger.log("There is an error with your pipes!");
             reject(event.data);
          });
 
          worker.addEventListener("message", function(response) {
             let message = JSON.parse(response.data);
             pipe.pipe(message);
-            console.log("EVENT = " + message.eventName );
+            Logger.log("EVENT = " + message.eventName );
          });
 
          worker.addEventListener("error", function(err) {
-            console.log("There is an error with your worker!");
-            console.log(err);
+            Logger.log("There is an error with your worker!");
+            Logger.log(err);
          });
 
          worker.postMessage(data);

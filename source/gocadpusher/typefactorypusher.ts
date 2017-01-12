@@ -8,6 +8,7 @@ import { TSolidPusher } from "./tsolidpusher";
 import { VSetPusher } from "./vsetpusher";
 import { UnknownPusher } from "./unknownpusher";
 import { TypeFactory } from "../gocad/typefactory";
+import { Logger } from "../util/logger";
 
 export class TypeFactoryPusher extends Pusher<Type> {
    typeFactory: TypeFactory;
@@ -62,7 +63,7 @@ export class TypeFactoryPusher extends Pusher<Type> {
       return this.typeFactory.isValid;
 
       function eventHandler(event: Event) {
-         // console.log("TFP: " + event.type);
+         Logger.log("TFP: " + event.type);
          self.dispatchEvent(event);
       }
    }

@@ -1,3 +1,5 @@
+import { Logger } from "../util/logger";
+
 export class FileDrop {
 
    constructor(element: HTMLElement, handler: Function) {
@@ -16,13 +18,13 @@ export class FileDrop {
       function dragenter(e: DragEvent) {
          e.stopPropagation();
          e.preventDefault();
-         // console.log("dragenter");
+         Logger.log("dragenter");
       }
 
       function dragover(e: DragEvent) {
          e.stopPropagation();
          e.preventDefault();
-         // console.log("dragover");
+         Logger.log("dragover");
       }
 
       function drop(e: DragEvent) {

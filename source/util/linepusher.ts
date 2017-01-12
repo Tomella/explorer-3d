@@ -1,3 +1,5 @@
+import { Logger } from "./logger";
+
 export class LinePusher {
    private PAGE_SIZE = 16 * 1024; // A 16 KB at a time should be harmless
    private pageNo: number;
@@ -54,7 +56,7 @@ export class LinePusher {
 
          self.reader.onloadend = (evt) => {
             if (evt.target["readyState"] === FileReader.prototype.DONE) { // DONE == 2
-               // console.log("Reading page " + self.pageNo);
+               Logger.log("Reading page " + self.pageNo);
                self.buffer = evt.target["result"];
                resolve(this.hasMore());
             }

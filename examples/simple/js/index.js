@@ -6,7 +6,8 @@
       workerCount: 7,
       browser: "modern",
       blockSize: 16 * 1024,
-      hasWebGl: webgl()
+      hasWebGl: webgl(),
+      logLevel: Explorer3d.Logger.LOG_nothing // LOG_NOTHING, LOG_ERROR, LOG_WARN, LOG_INFO, LOG_ALL. It logs nothing by default.
    };
 
    var refData = {
@@ -45,6 +46,11 @@
 /******************************************************************
  * Here is the calling of the API.
  ****************************************************************** */
+   Explorer3d.Logger.level = appOptions.logLevel;
+   // Explorer3d.Logger.log("ALL");
+   // Explorer3d.Logger.info("INFO");
+   // Explorer3d.Logger.warn("WARN");
+   // Explorer3d.Logger.error("ERROR");
 
    // Grab ourselves a world factory
    var factory = new Explorer3d.DefaultWorldFactory(dom.target);
@@ -89,18 +95,18 @@
       let promise = gocadParser.parse({ file: file, options: options });
 
       // Off to the parser to do its best
-      console.log(seconds() + ": We have started the process.");
+      Explorer3d.Logger.log(seconds() + ": We have started the process.");
       promise.then(function(data) {
          if (data.eventName) {
-            console.log(data);
+            Explorer3d.Logger.log(data);
          } else {
             // We got back a document so transform and show.
             var response = factory.show(data);
-            console.log(seconds() + ": We have shown the document");
+            Explorer3d.Logger.log(seconds() + ": We have shown the document");
          }
       }).catch(function(err) {
-         console.error("We failed in the simple example");
-         console.error(err);
+         Explorer3d.Logger.error("We failed in the simple example");
+         Explorer3d.Logger.error(err);
       });
    });
 
@@ -116,7 +122,7 @@
 
    // We'll attach something to change vertical exageration now.
    let verticalExagerate = new Explorer3d.VerticalExagerate(factory).onChange(function() {
-      console.log("We have a trigger to vertical exagerate");
+      Explorer3d.Logger.log("We have a trigger to vertical exagerate");
       verticalExagerate.set(+dom.verticalExageration.value);
    });
    dom.verticalExageration.addEventListener("change", function() {

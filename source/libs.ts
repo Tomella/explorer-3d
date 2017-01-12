@@ -4,3 +4,4 @@ export { DocumentPusher } from "./gocadpusher/documentpusher";
 export { LinesToLinePusher } from "./util/linestolinepusher";
 export { LinesPagedPusher } from "./util/linespagedpusher";
 
+export { Logger } from "./util/logger";

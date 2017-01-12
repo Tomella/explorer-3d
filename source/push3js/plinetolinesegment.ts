@@ -1,4 +1,5 @@
 import { range } from "../util/range";
+import { Logger } from "../util/logger";
 import { PLine } from "../gocad/pline";
 import { Event } from "../domain/event";
 import { Pipeline } from "./pipeline";
@@ -102,30 +103,8 @@ export class PLineToLineSegments extends Pipeline {
             this.ws.push(w);
          }
       });
-      console.log("WE have " + target.length + " vertices now");
+      Logger.log("WE have " + target.length + " vertices now");
    }
-
-   /*
-         lines.forEach((line: number[][]) => {
-            line.forEach((seg: number[], index: number) => {
-               let vertex = vertices[seg[0]];
-               let color = vertex > 3 ? lut.getColor(parseInt(vertex[3])) : solidColorObj;
-               color = color ? color : solidColorObj;
-               geometry.vertices.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
-               geometry.colors.push(color);
-
-               vertex = vertices[seg[1]];
-               color = vertex.length > 3 ? lut.getColor(parseInt(vertex[3])) : solidColorObj;
-            color = color ? color : solidColorObj;
-            geometry.vertices.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
-            geometry.colors.push(color);
-         });
-      });
-   */
-
-
-
-
 
    private processHeader(data) {
       if (this.geometry) {

@@ -1,6 +1,7 @@
 /// <reference path="../external.d.ts" />
 import { deepMerge } from "../util/deepmerge";
 import { Resizer } from "../modifiers/resizer";
+import { Logger } from "../util/logger";
 
 export class World {
    private options: any = {
@@ -224,7 +225,7 @@ export class World {
          // get size data (height depends only on font size)
          let metrics = context.measureText(message);
          let textWidth = metrics.width;
-         // console.log(textWidth);
+         Logger.log(textWidth);
 
          // background color
          context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","

@@ -3,10 +3,7 @@ importScripts('../resources/proj4.js');
 (function (context) {
 
    if(!context["Promise"]) {
-      console.log("Loading ES6 Promise");
       importScripts('../resources/es6-promise.js');
-   } else {
-      console.log("Not loading ES6-Promise");
    }
    importScripts('../resources/polyfills.js',
               '../libs.js');
@@ -51,6 +48,7 @@ importScripts('../resources/proj4.js');
    ];
 
    context.addEventListener('message', function (e) {
+      Explorer3d.Logger.level = e.data.options.logLevel;
       var self = this;
       var t = Date.now();
       var pusher = new Explorer3d.DocumentPusher(e.data.options, proj4);
@@ -61,14 +59,14 @@ importScripts('../resources/proj4.js');
       });
 
       eventList.forEach(function(entry) {
-         // console.log("Adding listener: " + name);
+         Explorer3d.Logger.log("Adding listener: " + entry.name);
          pusher.addEventListener(entry.name, entry.handler);
       });
 
       new Explorer3d.LinesPagedPusher(e.data.file, e.data.options, function(lines) {
            linesToLinePusher.receiver(lines);
       }).start().then(function() {
-         console.log("******************* Kaput ****************************");
+         Explorer3d.Logger.log("******************* Kaput ****************************");
          setTimeout(function() {
             // Just a fail safe. Say no more data after about 10 seconds.
             context.postMessage(JSON.stringify({
@@ -81,7 +79,7 @@ importScripts('../resources/proj4.js');
    }, false);
 
    function defaultHandler(event) {
-      console.log("GPW: " + event.type);
+      Explorer3d.Logger.log("GPW: " + event.type);
       sendDocument = false;
       context.postMessage(JSON.stringify({
          eventName: event.type,

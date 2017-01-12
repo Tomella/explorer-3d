@@ -4,6 +4,7 @@ import { PipeToThreedObj } from "../push3js/pipetothreedobj";
 import { DocumentPusher } from "../gocadpusher/documentpusher";
 import { LinesToLinePusher } from "../util/linestolinepusher";
 import { LinesPagedPusher } from "../util/linespagedpusher";
+import { Logger } from "../util/Logger";
 
 declare var proj4;
 
@@ -47,21 +48,21 @@ export class LocalGocadPusherParser extends Parser {
          });
 
          pipe.addEventListener("error", (event) => {
-            console.log("There is an error with your pipes!");
+            Logger.log("There is an error with your pipes!");
             reject(event.data);
          });
 
          new LinesPagedPusher(file, options, function (lines) {
             linesToLinePusher.receiver(lines);
          }).start().then(function () {
-            console.log("******************* Local Kaput ****************************");
+            Logger.log("******************* Local Kaput ****************************");
          });
 
          eventList.forEach(function (name) {
-            // console.log("Adding listener: " + name);
+            Logger.log("Adding listener: " + name);
             pusher.addEventListener(name,
                function defaultHandler(event) {
-                  console.log("GPW: " + event.type);
+                  Logger.log("GPW: " + event.type);
                   pipe.pipe({
                      eventName: event.type,
                      data: event.data

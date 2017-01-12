@@ -7,7 +7,7 @@ import { Pipeline } from "./pipeline";
 export class UnknownSink extends Pipeline {
    constructor() {
       super();
-      console.log("We don't understand this type but we'll soldier on.");
+      Logger.warn("We don't understand this type but we'll soldier on.");
    }
 
    pipe(event: any): void {

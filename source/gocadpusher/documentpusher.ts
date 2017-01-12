@@ -3,6 +3,7 @@ import { TypeFactoryPusher } from "./typefactorypusher";
 import { GocadDocument } from "../gocad/gocaddocument";
 import { Event } from "../domain/event";
 import { EventNames } from "./eventnames";
+import { Logger } from "../util/logger";
 
 export class DocumentPusher extends Pusher<GocadDocument> {
    document: GocadDocument;
@@ -35,7 +36,7 @@ export class DocumentPusher extends Pusher<GocadDocument> {
       let consumed = this.typefactorypusher.push(line);
       // Well behaved children will have changed state when not consuming so *shouldn't* get in an infinite loop.
       if (!consumed) {
-         console.log("NOT PUSHED: " + line);
+         Logger.log("NOT PUSHED: " + line);
          this.push(line);
          // Just in case they don't behave we'll swallow it.
          return true;
@@ -66,7 +67,7 @@ export class DocumentPusher extends Pusher<GocadDocument> {
    }
 
    eventHandler = (event: Event) => {
-      // console.log("DP: " + event.type);
+      Logger.log("DP: " + event.type);
       this.dispatchEvent(event);
    }
 }

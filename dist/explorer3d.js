@@ -442,6 +442,55 @@ function flowThru(val) {
     return val;
 }
 
+var Logger$1 = (function () {
+    function Logger() {
+    }
+    Object.defineProperty(Logger, "level", {
+        set: function (value) {
+            var num = parseInt(value);
+            num = num === NaN ? 0 : num;
+            Logger._level = num;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Logger.log = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ALL) {
+            Logger._log(line, obj);
+        }
+    };
+    Logger.error = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ERROR) {
+            Logger._log("ERROR: " + line, obj);
+        }
+    };
+    Logger.info = function (line, obj) {
+        if (Logger._level >= Logger.LOG_INFO) {
+            Logger._log("INFO: " + line, obj);
+        }
+    };
+    Logger.warn = function (line, obj) {
+        if (Logger._level >= Logger.LOG_WARN) {
+            Logger._log("WARN: " + line, obj);
+        }
+    };
+    Logger._log = function (line, obj) {
+        if (obj) {
+            console.log(line, obj);
+        }
+        else {
+            console.log(line);
+        }
+    };
+    return Logger;
+}());
+Logger$1._level = 0;
+Logger$1.LOG_ALL = 64;
+Logger$1.LOG_INFO = 32;
+Logger$1.LOG_WARN = 16;
+Logger$1.LOG_ERROR = 8;
+Logger$1.LOG_NOTHING = 0;
+
 function toBool(val) {
     return "true" === val;
 }
@@ -505,7 +554,7 @@ var HeaderPusher = (function (_super) {
                 this.header.values[parts[0]] = mapper(parts[1]);
             }
             else {
-                console.warn("That doesn't look like a pair: " + line);
+                Logger$1.warn("That doesn't look like a pair: " + line);
             }
         }
         return true;
@@ -1250,7 +1299,7 @@ var TypeFactoryPusher = (function (_super) {
         EventNames.names.forEach(function (name) { return _this.type.addEventListener(name, eventHandler); });
         return this.typeFactory.isValid;
         function eventHandler(event) {
-            // console.log("TFP: " + event.type);
+            Logger$1.log("TFP: " + event.type);
             self.dispatchEvent(event);
         }
     };
@@ -1280,7 +1329,7 @@ var DocumentPusher = (function (_super) {
         var _this = _super.call(this) || this;
         _this.proj4 = proj4;
         _this.eventHandler = function (event) {
-            // console.log("DP: " + event.type);
+            Logger$1.log("DP: " + event.type);
             _this.dispatchEvent(event);
         };
         _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -1309,7 +1358,7 @@ var DocumentPusher = (function (_super) {
         var consumed = this.typefactorypusher.push(line);
         // Well behaved children will have changed state when not consuming so *shouldn't* get in an infinite loop.
         if (!consumed) {
-            console.log("NOT PUSHED: " + line);
+            Logger$1.log("NOT PUSHED: " + line);
             this.push(line);
             // Just in case they don't behave we'll swallow it.
             return true;
@@ -1397,8 +1446,8 @@ var LinesPagedPusher = (function () {
                             this.callback(group);
                         }
                         catch (e) {
-                            console.error(e);
-                            console.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
+                            Logger$1.error(e);
+                            Logger$1.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
                         }
                         return [4 /*yield*/, this.read()];
                     case 4:
@@ -1414,8 +1463,8 @@ var LinesPagedPusher = (function () {
                                 this.callback(lines);
                             }
                             catch (e) {
-                                console.error(e);
-                                console.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
+                                Logger$1.error(e);
+                                Logger$1.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
                             }
                         }
                         result = false;
@@ -1435,7 +1484,7 @@ var LinesPagedPusher = (function () {
                 this.index = 0;
                 self = this;
                 start = this.pageNo * this.blockSize;
-                console.log("Block size: " + this.blockSize + ", file size: " + this.length);
+                Logger$1.log("Block size: " + this.blockSize + ", file size: " + this.length);
                 return [2 /*return*/, new Promise(function (resolve) {
                         if (start >= _this.length) {
                             resolve(false);
@@ -1443,21 +1492,21 @@ var LinesPagedPusher = (function () {
                         }
                         try {
                             self.reader.onloadend = function (evt) {
-                                console.log("We have loaded with ready state = " + evt.target["readyState"]);
+                                Logger$1.log("We have loaded with ready state = " + evt.target["readyState"]);
                                 if (evt.target["readyState"] === FileReader.prototype.DONE) {
-                                    console.log("Reading page " + self.pageNo);
+                                    Logger$1.log("Reading page " + self.pageNo);
                                     self.buffer = evt.target["result"];
                                     resolve(_this.hasMore());
                                 }
                             };
                             self.reader.onerror = function (evt) {
-                                console.log("What do you mean, error");
+                                Logger$1.log("What do you mean, error");
                             };
                             var blob = self.file.slice(start, start + self.blockSize);
                             self.reader.readAsText(blob);
                         }
                         catch (e) {
-                            console.log(e);
+                            Logger$1.log(e);
                         }
                     })];
             });
@@ -1798,7 +1847,7 @@ var World = (function () {
             // get size data (height depends only on font size)
             var metrics = context.measureText(message);
             var textWidth = metrics.width;
-            // console.log(textWidth);
+            Logger$1.log(textWidth);
             // background color
             context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","
                 + parms.backgroundColor.b + "," + parms.backgroundColor.a + ")";
@@ -2225,12 +2274,12 @@ var FileDrop = (function () {
         function dragenter(e) {
             e.stopPropagation();
             e.preventDefault();
-            // console.log("dragenter");
+            Logger$1.log("dragenter");
         }
         function dragover(e) {
             e.stopPropagation();
             e.preventDefault();
-            // console.log("dragover");
+            Logger$1.log("dragover");
         }
         function drop(e) {
             e.stopPropagation();
@@ -2354,25 +2403,8 @@ var PLineToLineSegments = (function (_super) {
                 _this.ws.push(w);
             }
         });
-        console.log("WE have " + target.length + " vertices now");
+        Logger$1.log("WE have " + target.length + " vertices now");
     };
-    /*
-          lines.forEach((line: number[][]) => {
-             line.forEach((seg: number[], index: number) => {
-                let vertex = vertices[seg[0]];
-                let color = vertex > 3 ? lut.getColor(parseInt(vertex[3])) : solidColorObj;
-                color = color ? color : solidColorObj;
-                geometry.vertices.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
-                geometry.colors.push(color);
- 
-                vertex = vertices[seg[1]];
-                color = vertex.length > 3 ? lut.getColor(parseInt(vertex[3])) : solidColorObj;
-             color = color ? color : solidColorObj;
-             geometry.vertices.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
-             geometry.colors.push(color);
-          });
-       });
-    */
     PLineToLineSegments.prototype.processHeader = function (data) {
         if (this.geometry) {
             this.dispatchEvent(new Event("error", "We already have processed a header. How did this happen?"));
@@ -2526,7 +2558,7 @@ var VSetToPoints = (function (_super) {
         vertices.forEach(function (vertex) {
             target.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
         });
-        console.log("WE have " + target.length + " vertices now");
+        Logger$1.log("WE have " + target.length + " vertices now");
     };
     VSetToPoints.prototype.processHeader = function (data) {
         if (this.geometry) {
@@ -2546,7 +2578,7 @@ var UnknownSink = (function (_super) {
     __extends(UnknownSink, _super);
     function UnknownSink() {
         var _this = _super.call(this) || this;
-        console.log("We don't understand this type but we'll soldier on.");
+        Logger.warn("We don't understand this type but we'll soldier on.");
         return _this;
     }
     UnknownSink.prototype.pipe = function (event) {
@@ -2628,6 +2660,55 @@ var PipeToThreedObj = (function (_super) {
     return PipeToThreedObj;
 }(Pipeline));
 
+var Logger$2 = (function () {
+    function Logger() {
+    }
+    Object.defineProperty(Logger, "level", {
+        set: function (value) {
+            var num = parseInt(value);
+            num = num === NaN ? 0 : num;
+            Logger._level = num;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Logger.log = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ALL) {
+            Logger._log(line, obj);
+        }
+    };
+    Logger.error = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ERROR) {
+            Logger._log("ERROR: " + line, obj);
+        }
+    };
+    Logger.info = function (line, obj) {
+        if (Logger._level >= Logger.LOG_INFO) {
+            Logger._log("INFO: " + line, obj);
+        }
+    };
+    Logger.warn = function (line, obj) {
+        if (Logger._level >= Logger.LOG_WARN) {
+            Logger._log("WARN: " + line, obj);
+        }
+    };
+    Logger._log = function (line, obj) {
+        if (obj) {
+            console.log(line, obj);
+        }
+        else {
+            console.log(line);
+        }
+    };
+    return Logger;
+}());
+Logger$2._level = 0;
+Logger$2.LOG_ALL = 64;
+Logger$2.LOG_INFO = 32;
+Logger$2.LOG_WARN = 16;
+Logger$2.LOG_ERROR = 8;
+Logger$2.LOG_NOTHING = 0;
+
 var GocadPusherParser = (function (_super) {
     __extends(GocadPusherParser, _super);
     function GocadPusherParser(options) {
@@ -2647,17 +2728,17 @@ var GocadPusherParser = (function (_super) {
             });
             pipe.addEventListener("error", function (event) {
                 worker.terminate();
-                console.log("There is an error with your pipes!");
+                Logger$2.log("There is an error with your pipes!");
                 reject(event.data);
             });
             worker.addEventListener("message", function (response) {
                 var message = JSON.parse(response.data);
                 pipe.pipe(message);
-                console.log("EVENT = " + message.eventName);
+                Logger$2.log("EVENT = " + message.eventName);
             });
             worker.addEventListener("error", function (err) {
-                console.log("There is an error with your worker!");
-                console.log(err);
+                Logger$2.log("There is an error with your worker!");
+                Logger$2.log(err);
             });
             worker.postMessage(data);
         });
@@ -2705,18 +2786,18 @@ var LocalGocadPusherParser = (function (_super) {
                 resolve(event.data);
             });
             pipe.addEventListener("error", function (event) {
-                console.log("There is an error with your pipes!");
+                Logger$2.log("There is an error with your pipes!");
                 reject(event.data);
             });
             new LinesPagedPusher(file, options, function (lines) {
                 linesToLinePusher.receiver(lines);
             }).start().then(function () {
-                console.log("******************* Local Kaput ****************************");
+                Logger$2.log("******************* Local Kaput ****************************");
             });
             eventList.forEach(function (name) {
-                // console.log("Adding listener: " + name);
+                Logger$2.log("Adding listener: " + name);
                 pusher.addEventListener(name, function defaultHandler(event) {
-                    console.log("GPW: " + event.type);
+                    Logger$2.log("GPW: " + event.type);
                     pipe.pipe({
                         eventName: event.type,
                         data: event.data
@@ -2764,14 +2845,14 @@ var ThrottleProxyParser = (function (_super) {
         function runCleaner() {
         }
         function checkJobs() {
-            console.log("We have " + self.count + " jobs queued");
+            Logger$2.log("We have " + self.count + " jobs queued");
             if (self.count > self.max || self.count < 1) {
                 return;
             }
             runJob();
         }
         function runJob() {
-            console.log("Jobs length = " + self.count);
+            Logger$2.log("Jobs length = " + self.count);
             var job = self.stack.shift();
             if (job) {
                 job.self.parser.parse(job.file, job.options).then(function (response) {
@@ -2779,8 +2860,8 @@ var ThrottleProxyParser = (function (_super) {
                     runJob();
                     job.resolver(response);
                 }).catch(function (err) {
-                    console.log("Ooops!");
-                    console.log(err);
+                    Logger$2.log("Ooops!");
+                    Logger$2.log(err);
                     decrementCount();
                 });
             }
@@ -2807,6 +2888,7 @@ exports.ThrottleProxyParser = ThrottleProxyParser;
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
 exports.LinesPagedPusher = LinesPagedPusher;
+exports.Logger = Logger$1;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

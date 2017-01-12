@@ -1,5 +1,5 @@
 import { Parser } from "./parser";
-
+import { Logger } from "../util/Logger";
 /**
  * Use as a wrapper around other parsers to limit the number of concurrent web workers.
  * The constructor takes the wrapped parser and an optional count of web workers.
@@ -42,7 +42,7 @@ export class ThrottleProxyParser extends Parser {
       }
 
       function checkJobs() {
-         console.log("We have " + self.count + " jobs queued");
+         Logger.log("We have " + self.count + " jobs queued");
          if (self.count > self.max || self.count < 1) {
             return;
          }
@@ -50,7 +50,7 @@ export class ThrottleProxyParser extends Parser {
       }
 
       function runJob() {
-         console.log("Jobs length = " + self.count);
+         Logger.log("Jobs length = " + self.count);
          let job = self.stack.shift();
          if (job) {
             job.self.parser.parse(job.file, job.options).then(response => {
@@ -58,8 +58,8 @@ export class ThrottleProxyParser extends Parser {
                runJob();
                job.resolver(response);
             }).catch(err => {
-               console.log("Ooops!");
-               console.log(err);
+               Logger.log("Ooops!");
+               Logger.log(err);
                decrementCount();
             });
          }

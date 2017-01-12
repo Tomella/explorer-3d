@@ -3,6 +3,7 @@ import { Event } from "../domain/event";
 import { Pipeline } from "./pipeline";
 import { BoxFactory } from "../factory/boxfactory";
 import { TsurfEventTypes } from "../domain/tsurfeventtypes";
+import { Logger } from "../util/logger";
 
 export class VSetToPoints extends Pipeline {
    geometry: THREE.Geometry;
@@ -63,7 +64,7 @@ export class VSetToPoints extends Pipeline {
       vertices.forEach(vertex => {
          target.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
       });
-      console.log("WE have " + target.length + " vertices now");
+      Logger.log("WE have " + target.length + " vertices now");
    }
 
    private processHeader(data) {

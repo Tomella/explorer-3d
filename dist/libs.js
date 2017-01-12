@@ -442,6 +442,55 @@ function flowThru(val) {
     return val;
 }
 
+var Logger = (function () {
+    function Logger() {
+    }
+    Object.defineProperty(Logger, "level", {
+        set: function (value) {
+            var num = parseInt(value);
+            num = num === NaN ? 0 : num;
+            Logger._level = num;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Logger.log = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ALL) {
+            Logger._log(line, obj);
+        }
+    };
+    Logger.error = function (line, obj) {
+        if (Logger._level >= Logger.LOG_ERROR) {
+            Logger._log("ERROR: " + line, obj);
+        }
+    };
+    Logger.info = function (line, obj) {
+        if (Logger._level >= Logger.LOG_INFO) {
+            Logger._log("INFO: " + line, obj);
+        }
+    };
+    Logger.warn = function (line, obj) {
+        if (Logger._level >= Logger.LOG_WARN) {
+            Logger._log("WARN: " + line, obj);
+        }
+    };
+    Logger._log = function (line, obj) {
+        if (obj) {
+            console.log(line, obj);
+        }
+        else {
+            console.log(line);
+        }
+    };
+    return Logger;
+}());
+Logger._level = 0;
+Logger.LOG_ALL = 64;
+Logger.LOG_INFO = 32;
+Logger.LOG_WARN = 16;
+Logger.LOG_ERROR = 8;
+Logger.LOG_NOTHING = 0;
+
 function toBool(val) {
     return "true" === val;
 }
@@ -505,7 +554,7 @@ var HeaderPusher = (function (_super) {
                 this.header.values[parts[0]] = mapper(parts[1]);
             }
             else {
-                console.warn("That doesn't look like a pair: " + line);
+                Logger.warn("That doesn't look like a pair: " + line);
             }
         }
         return true;
@@ -1250,7 +1299,7 @@ var TypeFactoryPusher = (function (_super) {
         EventNames.names.forEach(function (name) { return _this.type.addEventListener(name, eventHandler); });
         return this.typeFactory.isValid;
         function eventHandler(event) {
-            // console.log("TFP: " + event.type);
+            Logger.log("TFP: " + event.type);
             self.dispatchEvent(event);
         }
     };
@@ -1280,7 +1329,7 @@ var DocumentPusher = (function (_super) {
         var _this = _super.call(this) || this;
         _this.proj4 = proj4;
         _this.eventHandler = function (event) {
-            // console.log("DP: " + event.type);
+            Logger.log("DP: " + event.type);
             _this.dispatchEvent(event);
         };
         _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -1309,7 +1358,7 @@ var DocumentPusher = (function (_super) {
         var consumed = this.typefactorypusher.push(line);
         // Well behaved children will have changed state when not consuming so *shouldn't* get in an infinite loop.
         if (!consumed) {
-            console.log("NOT PUSHED: " + line);
+            Logger.log("NOT PUSHED: " + line);
             this.push(line);
             // Just in case they don't behave we'll swallow it.
             return true;
@@ -1397,8 +1446,8 @@ var LinesPagedPusher = (function () {
                             this.callback(group);
                         }
                         catch (e) {
-                            console.error(e);
-                            console.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
+                            Logger.error(e);
+                            Logger.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
                         }
                         return [4 /*yield*/, this.read()];
                     case 4:
@@ -1414,8 +1463,8 @@ var LinesPagedPusher = (function () {
                                 this.callback(lines);
                             }
                             catch (e) {
-                                console.error(e);
-                                console.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
+                                Logger.error(e);
+                                Logger.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
                             }
                         }
                         result = false;
@@ -1435,7 +1484,7 @@ var LinesPagedPusher = (function () {
                 this.index = 0;
                 self = this;
                 start = this.pageNo * this.blockSize;
-                console.log("Block size: " + this.blockSize + ", file size: " + this.length);
+                Logger.log("Block size: " + this.blockSize + ", file size: " + this.length);
                 return [2 /*return*/, new Promise(function (resolve) {
                         if (start >= _this.length) {
                             resolve(false);
@@ -1443,21 +1492,21 @@ var LinesPagedPusher = (function () {
                         }
                         try {
                             self.reader.onloadend = function (evt) {
-                                console.log("We have loaded with ready state = " + evt.target["readyState"]);
+                                Logger.log("We have loaded with ready state = " + evt.target["readyState"]);
                                 if (evt.target["readyState"] === FileReader.prototype.DONE) {
-                                    console.log("Reading page " + self.pageNo);
+                                    Logger.log("Reading page " + self.pageNo);
                                     self.buffer = evt.target["result"];
                                     resolve(_this.hasMore());
                                 }
                             };
                             self.reader.onerror = function (evt) {
-                                console.log("What do you mean, error");
+                                Logger.log("What do you mean, error");
                             };
                             var blob = self.file.slice(start, start + self.blockSize);
                             self.reader.readAsText(blob);
                         }
                         catch (e) {
-                            console.log(e);
+                            Logger.log(e);
                         }
                     })];
             });
@@ -1496,6 +1545,7 @@ var LinesPagedPusher = (function () {
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
 exports.LinesPagedPusher = LinesPagedPusher;
+exports.Logger = Logger;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
