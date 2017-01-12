@@ -1,4 +1,6 @@
 import { Pusher } from "./pusher";
+import { Event } from "../domain/event";
+import { EventNames } from "./eventnames";
 import { Type } from "../gocad/type";
 import { TSurfPusher } from "./tsurfpusher";
 import { PLinePusher } from "./plinepusher";
@@ -9,7 +11,7 @@ import { TypeFactory } from "../gocad/typefactory";
 
 export class TypeFactoryPusher extends Pusher<Type> {
    typeFactory: TypeFactory;
-   type: any;
+   type: Pusher<any>;
 
    constructor(public projectionFn?: Function) {
       super();
@@ -52,6 +54,16 @@ export class TypeFactoryPusher extends Pusher<Type> {
             this.type = new UnknownPusher(this.projectionFn);
          }
       }
+
+      let self = this;
+
+      EventNames.names.forEach(name => this.type.addEventListener(name, eventHandler));
+
       return this.typeFactory.isValid;
+
+      function eventHandler(event: Event) {
+         // console.log("TFP: " + event.type);
+         self.dispatchEvent(event);
+      }
    }
 }
