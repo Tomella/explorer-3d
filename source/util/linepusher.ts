@@ -1,5 +1,5 @@
 export class LinePusher {
-   private PAGE_SIZE = 4 * 1024 * 1024; // A 16 KB at a time should be harmless
+   private PAGE_SIZE = 16 * 1024; // A 16 KB at a time should be harmless
    private pageNo: number;
    private index: number;
    private length: number;
@@ -7,17 +7,16 @@ export class LinePusher {
    private lineBuffer: string[];
    private reader: FileReader;
 
-   constructor(public file: File, public callback: Function) {
+   constructor(public file: File) {
       this.file = file;
       this.length = file.size;
       this.pageNo = -1;
       this.index = 0;
       this.reader = new FileReader();
       this.lineBuffer = [];
-      this.start();
    }
 
-   async start() {
+   async start(targetFn: Function) {
       // Prime the first read
       let result = await this.read();
 
@@ -28,10 +27,10 @@ export class LinePusher {
                result = await this.read();
                break;
             case "line":
-               this.callback(lineResult.line);
+               targetFn(lineResult.line);
                break;
             case "complete":
-               this.callback(lineResult.line);
+               targetFn(lineResult.line);
                result = false;
                break;
          }
