@@ -2,7 +2,6 @@ import { toColor } from "../util/tocolor";
 import { Header } from "../gocad/header";
 import { VSetHeader } from "../gocad/vsetheader";
 import { HeaderPusher } from "./headerpusher";
-import * as util from "../util/linereader";
 
 export class VSetHeaderPusher  extends HeaderPusher {
    public vsetHeader: VSetHeader;
