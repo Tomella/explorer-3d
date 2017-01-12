@@ -39,18 +39,18 @@ export function vertex(vrtx: string, projectionFn: Function, zDirection?: number
       switch (i) {
          case 0: break;
          case 1:
-            response.index = parseInt(item) - 1;
+            response.index = +item - 1;
             break;
          case 2:
-            coord[0] = parseFloat(item);
+            coord[0] = +item;
             // response.x = parseFloat(item);
             break;
          case 3:
-            coord[1] = parseFloat(item);
+            coord[1] = +item;
             // response.y = parseFloat(item);
             break;
          case 4:
-            response.z = parseFloat(item) * zSign;
+            response.z = +item * zSign;
             break;
          case 5:
             response.properties = [];
