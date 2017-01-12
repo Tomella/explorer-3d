@@ -27,7 +27,7 @@ importScripts('../resources/proj4.js');
             }
          });
 
-         context.postMessage({types:[vset]});
+         context.postMessage(JSON.stringify({types:[vset]}));
          context.close();
       }
       reader.readAsText(file);

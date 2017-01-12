@@ -25,6 +25,81 @@ function __awaiter(thisArg, _arguments, P, generator) {
     });
 }
 
+var EventDispatcher = (function () {
+    function EventDispatcher() {
+    }
+    EventDispatcher.prototype.addEventListener = function (type, listener) {
+        if (this.listeners === undefined)
+            this.listeners = {};
+        var listeners = this.listeners;
+        if (listeners[type] === undefined) {
+            listeners[type] = [];
+        }
+        if (listeners[type].indexOf(listener) === -1) {
+            listeners[type].push(listener);
+        }
+    };
+    EventDispatcher.prototype.hasEventListener = function (type, listener) {
+        if (this.listeners === undefined)
+            return false;
+        var listeners = this.listeners;
+        if (listeners[type] !== undefined && listeners[type].indexOf(listener) !== -1) {
+            return true;
+        }
+        return false;
+    };
+    EventDispatcher.prototype.removeEventListener = function (type, listener) {
+        if (this.listeners === undefined)
+            return;
+        var listenerArray = this.listeners[type];
+        if (listenerArray !== undefined) {
+            this.listeners[type] = listenerArray.filter(function (existing) { return listener !== existing; });
+        }
+    };
+    EventDispatcher.prototype.dispatchEvent = function (event) {
+        var _this = this;
+        var listeners = this.listeners;
+        if (listeners === undefined)
+            return;
+        var array = [];
+        var listenerArray = listeners[event.type];
+        if (listenerArray !== undefined) {
+            event.target = this;
+            listenerArray.forEach(function (listener) { return listener.call(_this, event); });
+        }
+    };
+    EventDispatcher.prototype.removeAllListeners = function () {
+        this.listeners = undefined;
+    };
+    return EventDispatcher;
+}());
+
+var Pusher = (function (_super) {
+    __extends(Pusher, _super);
+    function Pusher() {
+        var _this = _super.call(this) || this;
+        _this.complete = false;
+        return _this;
+    }
+    return Pusher;
+}(EventDispatcher));
+
+var EventNames = (function () {
+    function EventNames() {
+    }
+    return EventNames;
+}());
+EventNames.names = [
+    "bstones",
+    "borders",
+    "complete",
+    "header",
+    "vertices",
+    "faces",
+    "lines",
+    "properties"
+];
+
 function atom(atm) {
     var parts = atm.split(/\s+/g);
     var length = parts.length;
@@ -109,18 +184,18 @@ function vertex(vrtx, projectionFn, zDirection) {
         switch (i) {
             case 0: break;
             case 1:
-                response.index = parseInt(item) - 1;
+                response.index = +item - 1;
                 break;
             case 2:
-                coord[0] = parseFloat(item);
+                coord[0] = +item;
                 // response.x = parseFloat(item);
                 break;
             case 3:
-                coord[1] = parseFloat(item);
+                coord[1] = +item;
                 // response.y = parseFloat(item);
                 break;
             case 4:
-                response.z = parseFloat(item) * zSign;
+                response.z = +item * zSign;
                 break;
             case 5:
                 response.properties = [];
@@ -137,6 +212,114 @@ function vertex(vrtx, projectionFn, zDirection) {
     return response;
 }
 
+var Event = (function () {
+    function Event(type, data, target) {
+        this.type = type;
+        this.data = data;
+        this.target = target;
+    }
+    return Event;
+}());
+
+var Box = (function () {
+    function Box(min, max) {
+        this.min = min;
+        this.max = max;
+    }
+    return Box;
+}());
+
+var Vector3 = (function () {
+    function Vector3(x, y, z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+    return Vector3;
+}());
+
+var BoxFactory = (function () {
+    function BoxFactory() {
+    }
+    BoxFactory.fromVertices = function (vertices) {
+        if (vertices === void 0) { vertices = []; }
+        var box;
+        vertices.forEach(function (vertex) {
+            box = BoxFactory.expand(box, vertex);
+        });
+        return box;
+    };
+    BoxFactory.expand = function (box, vertex) {
+        if (box === void 0) { box = new Box(new Vector3(Infinity, Infinity, Infinity), new Vector3(-Infinity, -Infinity, -Infinity)); }
+        box.min.x = Math.min(box.min.x, vertex[0]);
+        box.min.y = Math.min(box.min.y, vertex[1]);
+        box.min.z = Math.min(box.min.z, vertex[2]);
+        box.max.x = Math.max(box.max.x, vertex[0]);
+        box.max.y = Math.max(box.max.y, vertex[1]);
+        box.max.z = Math.max(box.max.z, vertex[2]);
+        return box;
+    };
+    BoxFactory.toThreeBox3 = function (box) {
+        return new THREE.Box3(new THREE.Vector3(box.min.x, box.min.y, box.min.z), new THREE.Vector3(box.max.x, box.max.y, box.max.z));
+    };
+    return BoxFactory;
+}());
+
+var VectorFactory = (function () {
+    function VectorFactory() {
+    }
+    VectorFactory.subVectors = function (a, b) {
+        return new Vector3(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    };
+    VectorFactory.cross = function (v, w) {
+        var vx = v.x, vy = v.y, vz = v.z;
+        var wx = w.x, wy = w.y, wz = w.z;
+        var x = vy * wz - vz * wy;
+        var y = vz * wx - vx * wz;
+        var z = vx * wy - vy * wx;
+        return new Vector3(x, y, z);
+    };
+    VectorFactory.normalize = function (v) {
+        return VectorFactory.divideScalar(v, VectorFactory.calcLength(v));
+    };
+    VectorFactory.calcLength = function (v) {
+        return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    };
+    VectorFactory.divideScalar = function (v, scalar) {
+        return VectorFactory.multiplyScalar(v, 1 / scalar);
+    };
+    VectorFactory.multiplyScalar = function (v, scalar) {
+        if (isFinite(scalar)) {
+            v.x *= scalar;
+            v.y *= scalar;
+            v.z *= scalar;
+        }
+        else {
+            v.x = 0;
+            v.y = 0;
+            v.z = 0;
+        }
+        return v;
+    };
+    return VectorFactory;
+}());
+
+var FaceFactory = (function () {
+    function FaceFactory() {
+    }
+    FaceFactory.computeNormal = function (face, vertices) {
+        var a = vertices[face[0]];
+        var b = vertices[face[1]];
+        var c = vertices[face[2]];
+        var cb = VectorFactory.subVectors(c, b);
+        var ab = VectorFactory.subVectors(a, b);
+        cb = VectorFactory.cross(cb, ab);
+        VectorFactory.normalize(cb);
+        face[3] = cb;
+    };
+    return FaceFactory;
+}());
+
 var Type = (function () {
     function Type() {
         this.type = "Type";
@@ -148,7 +331,7 @@ var Type = (function () {
 var TSurf = (function (_super) {
     __extends(TSurf, _super);
     function TSurf() {
-        var _this = _super.apply(this, arguments) || this;
+        var _this = _super !== null && _super.apply(this, arguments) || this;
         _this.type = "TSurf";
         _this.vertices = [];
         _this.faces = [];
@@ -174,954 +357,6 @@ function split(val) {
         return str.replace(/\"/g, "");
     });
 }
-
-var CoordinateSystemBufferedReader = (function () {
-    function CoordinateSystemBufferedReader(reader) {
-        this.reader = reader;
-    }
-    CoordinateSystemBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var coordinateSystem, line, index, name, rest, mapper;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        coordinateSystem = new CoordinateSystem();
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 1:
-                        line = (_a.sent()).trim();
-                        if (!(line !== "GOCAD_ORIGINAL_COORDINATE_SYSTEM"))
-                            return [3 /*break*/, 2];
-                        this.reader.previous();
-                        coordinateSystem.isValid = false || true;
-                        return [3 /*break*/, 6];
-                    case 2: return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 3:
-                        line = (_a.sent()).trim();
-                        _a.label = 4;
-                    case 4:
-                        if (!(line && line !== "END_ORIGINAL_COORDINATE_SYSTEM"))
-                            return [3 /*break*/, 6];
-                        index = line.indexOf(" ");
-                        if (index > 0) {
-                            name = line.substring(0, index);
-                            rest = line.substring(index).trim();
-                            mapper = coordinateSystem.typeMap[name] ? coordinateSystem.typeMap[name] : function (val) { return val; };
-                            coordinateSystem[name] = mapper(rest);
-                        }
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 5:
-                        line = (_a.sent()).trim();
-                        return [3 /*break*/, 4];
-                    case 6:
-                        coordinateSystem.typeMap = null;
-                        return [2 /*return*/, coordinateSystem];
-                }
-            });
-        });
-    };
-    return CoordinateSystemBufferedReader;
-}());
-
-function flowThru(val) {
-    return val;
-}
-
-function toBool(val) {
-    return "true" === val;
-}
-
-function toColor(val) {
-    if (val) {
-        var parts = val.trim().split(/\s+/g);
-        if (parts.length === 1) {
-            if (parts[0].indexOf("#") === 0) {
-                return parseInt("0x" + parts[0].substring(1));
-            }
-        }
-        return parseFloat(parts[0]) * 255 * 256 * 256 + parseFloat(parts[1]) * 255 * 256 + parseFloat(parts[2]) * 255;
-    }
-    return null;
-}
-
-var Header = (function () {
-    function Header() {
-        this.values = {};
-        this.typeMap = {
-            ivolmap: toBool,
-            imap: toBool,
-            parts: toBool,
-            mesh: toBool,
-            cn: toBool,
-            border: toBool,
-            "*solid*color": toColor
-        };
-    }
-    return Header;
-}());
-
-var HeaderBufferedReader = (function () {
-    function HeaderBufferedReader(reader) {
-        this.reader = reader;
-    }
-    HeaderBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var header, line, parts, mapper;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        header = new Header();
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 1:
-                        line = (_a.sent()).trim();
-                        _a.label = 2;
-                    case 2:
-                        if (!line)
-                            return [3 /*break*/, 4];
-                        if (line.indexOf("}") === 0) {
-                            return [3 /*break*/, 4];
-                        }
-                        parts = line.split(":");
-                        if (parts.length === 2) {
-                            mapper = header.typeMap[parts[0]];
-                            mapper = mapper ? mapper : flowThru;
-                            header.values[parts[0]] = mapper(parts[1]);
-                        }
-                        else {
-                            console.warn("That doesn't look like a pair: " + line);
-                        }
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 3:
-                        line = (_a.sent()).trim();
-                        return [3 /*break*/, 2];
-                    case 4:
-                        header.name = header.values["name"];
-                        header.solidColor = header.values["*solid*color"];
-                        header.solidColor = header.solidColor ? header.solidColor : 0xeeeeee;
-                        header.typeMap = null;
-                        return [2 /*return*/, header];
-                }
-            });
-        });
-    };
-    return HeaderBufferedReader;
-}());
-
-var TypeBufferedReader = (function () {
-    /**
-     * We come in here on the next line
-     */
-    function TypeBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-    }
-    TypeBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Type()];
-            });
-        });
-    };
-    return TypeBufferedReader;
-}());
-
-var TSurfBufferedReader = (function (_super) {
-    __extends(TSurfBufferedReader, _super);
-    /**
-     * We come in here on the next line
-     */
-    function TSurfBufferedReader(reader, projectionFn) {
-        return _super.call(this, reader, projectionFn) || this;
-    }
-    TSurfBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var tsurf, line, _a, cs, zSign, v, a, b;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        tsurf = new TSurf();
-                        return [4 /*yield*/, this.reader.expects("HEADER")];
-                    case 1:
-                        line = _b.sent();
-                        if (!line || line.indexOf("{") === -1) {
-                            return [2 /*return*/, tsurf];
-                        }
-                        _a = tsurf;
-                        return [4 /*yield*/, new HeaderBufferedReader(this.reader).read()];
-                    case 2:
-                        _a.header = _b.sent();
-                        return [4 /*yield*/, new CoordinateSystemBufferedReader(this.reader).read()];
-                    case 3:
-                        cs = _b.sent();
-                        zSign = 1;
-                        if (cs.isValid) {
-                            tsurf.coordinateSystem = cs;
-                            zSign = tsurf.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
-                        }
-                        return [4 /*yield*/, this.reader.expects("TFACE")];
-                    case 4:
-                        line = _b.sent();
-                        _b.label = 5;
-                    case 5: return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 6:
-                        if (!((line = (_b.sent()).trim()) !== "END"))
-                            return [3 /*break*/, 7];
-                        if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
-                            v = vertex(line, this.projectionFn, zSign);
-                            tsurf.vertices[v.index] = v.all;
-                        }
-                        else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
-                            a = atom(line);
-                            tsurf.vertices[a.index] = tsurf.vertices[a.vertexId];
-                        }
-                        else if (line.indexOf("TRGL") === 0) {
-                            tsurf.faces.push(face(line).abc);
-                        }
-                        else if (line.indexOf("BSTONE") === 0) {
-                            tsurf.bstones.push(bstone(line));
-                        }
-                        else if (line.indexOf("BORDER") === 0) {
-                            b = border(line);
-                            tsurf.borders[b.id] = [b.vertices[0], b.vertices[1]];
-                        }
-                        return [3 /*break*/, 5];
-                    case 7: return [2 /*return*/, tsurf];
-                }
-            });
-        });
-    };
-    return TSurfBufferedReader;
-}(TypeBufferedReader));
-
-function segment(seg) {
-    var parts = seg.split(/\s+/g);
-    return [
-        parseInt(parts[1]) - 1,
-        parseInt(parts[2]) - 1
-    ];
-}
-
-var PLineHeader = (function (_super) {
-    __extends(PLineHeader, _super);
-    function PLineHeader() {
-        return _super.apply(this, arguments) || this;
-    }
-    return PLineHeader;
-}(Header));
-
-var PLineHeaderBufferedReader = (function (_super) {
-    __extends(PLineHeaderBufferedReader, _super);
-    function PLineHeaderBufferedReader(reader) {
-        return _super.call(this, reader) || this;
-    }
-    PLineHeaderBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var header, plineHeader, color;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, _super.prototype.read.call(this)];
-                    case 1:
-                        header = _a.sent();
-                        plineHeader = Object.assign(new PLineHeader(), header);
-                        plineHeader.paintedVariable = plineHeader.values["*painted*variable"];
-                        color = plineHeader.values["*line*color"];
-                        plineHeader.color = color ? toColor(color) : 0x0000ff;
-                        return [2 /*return*/, plineHeader];
-                }
-            });
-        });
-    };
-    return PLineHeaderBufferedReader;
-}(HeaderBufferedReader));
-
-var PLine = (function (_super) {
-    __extends(PLine, _super);
-    function PLine() {
-        var _this = _super.apply(this, arguments) || this;
-        _this.type = "PLine";
-        _this.vertices = [];
-        _this.lines = [];
-        return _this;
-    }
-    return PLine;
-}(Type));
-
-var PLineBufferedReader = (function (_super) {
-    __extends(PLineBufferedReader, _super);
-    /**
-     * We come in here on the next line
-     */
-    function PLineBufferedReader(reader, projectionFn) {
-        return _super.call(this, reader, projectionFn) || this;
-    }
-    PLineBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var pline, line, header, cs, zSign, startIndex, lastIndex, hasSeg, lineSegments, completed, v, a, i;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        pline = new PLine();
-                        return [4 /*yield*/, this.reader.expects("HEADER")];
-                    case 1:
-                        line = _a.sent();
-                        if (!line || line.indexOf("{") === -1) {
-                            return [2 /*return*/, pline];
-                        }
-                        return [4 /*yield*/, new PLineHeaderBufferedReader(this.reader).read()];
-                    case 2:
-                        header = _a.sent();
-                        pline.header = header;
-                        return [4 /*yield*/, new CoordinateSystemBufferedReader(this.reader).read()];
-                    case 3:
-                        cs = _a.sent();
-                        zSign = 1;
-                        if (cs.isValid) {
-                            pline.coordinateSystem = cs;
-                            zSign = pline.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
-                        }
-                        return [4 /*yield*/, this.reader.expects("ILINE")];
-                    case 4:
-                        // let props = new Properties(reader);
-                        // if(props.isValid) {
-                        //   this.properties = props;
-                        // }
-                        line = _a.sent();
-                        startIndex = 1;
-                        lastIndex = 1;
-                        hasSeg = false;
-                        lineSegments = [];
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 5:
-                        line = _a.sent();
-                        completed = (line ? line.trim() : "}") === "}";
-                        _a.label = 6;
-                    case 6:
-                        if (!!completed)
-                            return [3 /*break*/, 9];
-                        if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
-                            v = vertex(line, this.projectionFn, zSign);
-                            pline.vertices[v.index] = v.all;
-                            lastIndex = v.index;
-                        }
-                        else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
-                            a = atom(line);
-                            pline.vertices[a.index] = pline.vertices[a.vertexId];
-                        }
-                        else if (line.indexOf("SEG") === 0) {
-                            lineSegments.push(segment(line));
-                            hasSeg = true;
-                        }
-                        else if (line.indexOf("ILINE") === 0 || line.indexOf("END") === 0) {
-                            completed = line.indexOf("END") === 0;
-                            if (!hasSeg && lastIndex > startIndex) {
-                                // We have to step over every vertex pair from start index to lastIndex
-                                for (i = startIndex; i < lastIndex; i++) {
-                                    lineSegments.push([i, i + 1]);
-                                }
-                            }
-                            pline.lines.push(lineSegments);
-                            lineSegments = [];
-                            startIndex = lastIndex + 1;
-                            hasSeg = false;
-                        }
-                        completed = !this.reader.hasMore();
-                        if (!!completed)
-                            return [3 /*break*/, 8];
-                        return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 7:
-                        line = (_a.sent()).trim();
-                        completed = line === "}";
-                        _a.label = 8;
-                    case 8: return [3 /*break*/, 6];
-                    case 9: return [2 /*return*/, pline];
-                }
-            });
-        });
-    };
-    return PLineBufferedReader;
-}(TypeBufferedReader));
-
-var TSolid = (function (_super) {
-    __extends(TSolid, _super);
-    function TSolid() {
-        var _this = _super.apply(this, arguments) || this;
-        _this.type = "TSolid";
-        _this.vertices = [];
-        _this.tetras = [];
-        return _this;
-    }
-    return TSolid;
-}(Type));
-
-function tetra(tetra) {
-    var parts = tetra.split(/\s+/g);
-    return [
-        parseInt(parts[1]),
-        parseInt(parts[2]),
-        parseInt(parts[3]),
-        parseInt(parts[4])
-    ];
-}
-
-var TSolidBufferedReader = (function () {
-    function TSolidBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-    }
-    TSolidBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var tsolid, type, line, _a, cs, zSign, v, a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        tsolid = new TSolid();
-                        return [4 /*yield*/, new TypeBufferedReader(this.reader, this.projectionFn).read()];
-                    case 1:
-                        type = _b.sent();
-                        return [4 /*yield*/, this.reader.expects("HEADER")];
-                    case 2:
-                        line = _b.sent();
-                        if (!line)
-                            return [3 /*break*/, 8];
-                        _a = tsolid;
-                        return [4 /*yield*/, new HeaderBufferedReader(this.reader).read()];
-                    case 3:
-                        _a.header = _b.sent();
-                        return [4 /*yield*/, new CoordinateSystemBufferedReader(this.reader).read()];
-                    case 4:
-                        cs = _b.sent();
-                        zSign = 1;
-                        if (cs.isValid) {
-                            tsolid.coordinateSystem = cs;
-                            zSign = tsolid.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
-                        }
-                        return [4 /*yield*/, this.reader.expects("TVOLUME")];
-                    case 5:
-                        line = _b.sent();
-                        _b.label = 6;
-                    case 6: return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 7:
-                        if (!((line = (_b.sent()).trim()) !== "END"))
-                            return [3 /*break*/, 8];
-                        if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
-                            v = vertex(line, this.projectionFn, zSign);
-                            tsolid.vertices[v.index] = v.all;
-                        }
-                        else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
-                            a = atom(line);
-                            tsolid.vertices[a.index] = tsolid.vertices[a.vertexId];
-                        }
-                        else if (line.indexOf("TETRA") === 0) {
-                            tsolid.tetras.push(tetra(line));
-                        }
-                        return [3 /*break*/, 6];
-                    case 8: return [2 /*return*/, tsolid];
-                }
-            });
-        });
-    };
-    return TSolidBufferedReader;
-}());
-
-var VSet = (function (_super) {
-    __extends(VSet, _super);
-    function VSet() {
-        var _this = _super.apply(this, arguments) || this;
-        _this.type = "VSet";
-        _this.vertices = [];
-        return _this;
-    }
-    return VSet;
-}(Type));
-
-var VSetHeader = (function (_super) {
-    __extends(VSetHeader, _super);
-    function VSetHeader() {
-        return _super.apply(this, arguments) || this;
-    }
-    return VSetHeader;
-}(Header));
-
-var VSetHeaderBufferedReader = (function () {
-    function VSetHeaderBufferedReader(reader) {
-        this.reader = reader;
-    }
-    VSetHeaderBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var header, vsetheader;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, new HeaderBufferedReader(this.reader).read()];
-                    case 1:
-                        header = _a.sent();
-                        vsetheader = Object.assign(new VSetHeader(), header);
-                        vsetheader.color = toColor(vsetheader.values["*atoms*color"]);
-                        return [2 /*return*/, vsetheader];
-                }
-            });
-        });
-    };
-    return VSetHeaderBufferedReader;
-}());
-
-var VSetBufferedReader = (function () {
-    /**
-     * We come in here on the next line
-     */
-    function VSetBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-    }
-    VSetBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var vset, line, _a, cs, zSign, v, a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        vset = new VSet();
-                        return [4 /*yield*/, this.reader.expects("HEADER")];
-                    case 1:
-                        line = _b.sent();
-                        if (!line || line.indexOf("{") === -1) {
-                            return [2 /*return*/];
-                        }
-                        _a = vset;
-                        return [4 /*yield*/, new VSetHeaderBufferedReader(this.reader).read()];
-                    case 2:
-                        _a.header = _b.sent();
-                        return [4 /*yield*/, new CoordinateSystemBufferedReader(this.reader).read()];
-                    case 3:
-                        cs = _b.sent();
-                        zSign = 1;
-                        if (cs.isValid) {
-                            vset.coordinateSystem = cs;
-                            zSign = vset.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
-                        }
-                        _b.label = 4;
-                    case 4: return [4 /*yield*/, this.reader.nextDataLine()];
-                    case 5:
-                        if (!((line = (_b.sent()).trim()) !== "END"))
-                            return [3 /*break*/, 6];
-                        if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
-                            v = vertex(line, this.projectionFn, zSign);
-                            vset.vertices[v.index] = v.all;
-                        }
-                        else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
-                            a = atom(line);
-                            vset.vertices[a.index] = vset.vertices[a.vertexId];
-                        }
-                        return [3 /*break*/, 4];
-                    case 6: return [2 /*return*/, vset];
-                }
-            });
-        });
-    };
-    return VSetBufferedReader;
-}());
-
-var Unknown = (function (_super) {
-    __extends(Unknown, _super);
-    function Unknown() {
-        var _this = _super.apply(this, arguments) || this;
-        _this.type = "Unknown";
-        return _this;
-    }
-    return Unknown;
-}(Type));
-
-var UnknownBufferedReader = (function () {
-    /**
-     * We come in here on the next line
-     */
-    function UnknownBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-    }
-    UnknownBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var unknown, line;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        unknown = new Unknown();
-                        _a.label = 1;
-                    case 1:
-                        if (!this.reader.hasMore())
-                            return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.reader.next()];
-                    case 2:
-                        line = (_a.sent()).trim();
-                        if (line === "END") {
-                            return [3 /*break*/, 3];
-                        }
-                        return [3 /*break*/, 1];
-                    case 3: return [2 /*return*/, unknown];
-                }
-            });
-        });
-    };
-    return UnknownBufferedReader;
-}());
-
-var TypeFactory = (function () {
-    function TypeFactory() {
-        this.isValid = false;
-    }
-    return TypeFactory;
-}());
-
-var TypeFactoryBufferedReader = (function () {
-    function TypeFactoryBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-    }
-    TypeFactoryBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var typeFactory, line, parts, _a, _b, _c, _d, _e;
-            return __generator(this, function (_f) {
-                switch (_f.label) {
-                    case 0:
-                        typeFactory = new TypeFactory();
-                        if (!this.reader.hasMore())
-                            return [3 /*break*/, 11];
-                        return [4 /*yield*/, this.reader.next()];
-                    case 1:
-                        line = (_f.sent()).trim();
-                        parts = line.split(/\s+/g);
-                        typeFactory.isValid = parts.length === 3
-                            && parts[0] === "GOCAD"
-                            && (parts[2] === "1.0" || parts[2] === "1");
-                        if (!typeFactory.isValid)
-                            return [3 /*break*/, 11];
-                        typeFactory.version = parts[2];
-                        if (!(parts[1] === "TSurf"))
-                            return [3 /*break*/, 3];
-                        _a = typeFactory;
-                        return [4 /*yield*/, new TSurfBufferedReader(this.reader, this.projectionFn).read()];
-                    case 2:
-                        _a.type = _f.sent();
-                        return [3 /*break*/, 11];
-                    case 3:
-                        if (!(parts[1] === "PLine"))
-                            return [3 /*break*/, 5];
-                        _b = typeFactory;
-                        return [4 /*yield*/, new PLineBufferedReader(this.reader, this.projectionFn).read()];
-                    case 4:
-                        _b.type = _f.sent();
-                        return [3 /*break*/, 11];
-                    case 5:
-                        if (!(parts[1] === "TSolid"))
-                            return [3 /*break*/, 7];
-                        _c = typeFactory;
-                        return [4 /*yield*/, new TSolidBufferedReader(this.reader, this.projectionFn).read()];
-                    case 6:
-                        _c.type = _f.sent();
-                        return [3 /*break*/, 11];
-                    case 7:
-                        if (!(parts[1] === "VSet"))
-                            return [3 /*break*/, 9];
-                        _d = typeFactory;
-                        return [4 /*yield*/, new VSetBufferedReader(this.reader, this.projectionFn).read()];
-                    case 8:
-                        _d.type = _f.sent();
-                        return [3 /*break*/, 11];
-                    case 9:
-                        _e = typeFactory;
-                        return [4 /*yield*/, new UnknownBufferedReader(this.reader, this.projectionFn).read()];
-                    case 10:
-                        _e.type = _f.sent();
-                        _f.label = 11;
-                    case 11: return [2 /*return*/, typeFactory];
-                }
-            });
-        });
-    };
-    return TypeFactoryBufferedReader;
-}());
-
-var Document = (function () {
-    function Document() {
-        this.types = [];
-    }
-    return Document;
-}());
-
-var DocumentBufferedReader = (function () {
-    function DocumentBufferedReader(reader, projectionFn) {
-        this.reader = reader;
-        this.projectionFn = projectionFn;
-        this.document = new Document();
-    }
-    DocumentBufferedReader.prototype.read = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var typefactoryreader, obj;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.document.types = [];
-                        if (!this.reader.hasMore())
-                            return [3 /*break*/, 2];
-                        typefactoryreader = new TypeFactoryBufferedReader(this.reader, this.projectionFn);
-                        return [4 /*yield*/, typefactoryreader.read()];
-                    case 1:
-                        obj = _a.sent();
-                        if (obj.isValid) {
-                            this.document.types.push(obj.type);
-                        }
-                        _a.label = 2;
-                    case 2: return [2 /*return*/, this.document];
-                }
-            });
-        });
-    };
-    return DocumentBufferedReader;
-}());
-
-var LineStreamer = (function () {
-    function LineStreamer(file) {
-        this.PAGE_SIZE = 16 * 1048576; // A mb at a time should be harmless
-        this.file = file;
-        this.length = file.size;
-        this.pageNo = -1;
-        this.index = 0;
-        this.reader = new FileReader();
-    }
-    LineStreamer.prototype.readPage = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var self, start, blob;
-            return __generator(this, function (_a) {
-                this.pageNo++;
-                this.index = 0;
-                self = this;
-                start = this.pageNo * this.PAGE_SIZE;
-                if (start >= this.length) {
-                    return [2 /*return*/, ""];
-                }
-                blob = this.file.slice(start, start + this.PAGE_SIZE);
-                this.reader.readAsText(blob);
-                return [2 /*return*/, new Promise(function (resolve) {
-                        self.reader.onloadend = function (evt) {
-                            if (evt.target["readyState"] === FileReader.prototype.DONE) {
-                                // console.log("Reading page " + this.pageNo);
-                                self.buffer = evt.target["result"];
-                                // We've finished the block get ready for the next
-                                resolve(true);
-                            }
-                        };
-                    })];
-            });
-        });
-    };
-    LineStreamer.prototype.hasMore = function () {
-        return this.index + this.PAGE_SIZE * this.pageNo < this.length - 1;
-    };
-    LineStreamer.prototype.nextNonEmpty = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var lineBuffer, char, str;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        lineBuffer = [];
-                        _a.label = 1;
-                    case 1:
-                        if (!this.hasMore())
-                            return [3 /*break*/, 7];
-                        if (!(!this.buffer || this.index >= this.PAGE_SIZE))
-                            return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.readPage()];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        char = this.buffer[this.index++];
-                        if (char === "\r") {
-                            return [3 /*break*/, 1];
-                        }
-                        if (!(char === "\n"))
-                            return [3 /*break*/, 5];
-                        return [4 /*yield*/, this.next()];
-                    case 4:
-                        str = _a.sent();
-                        if (lineBuffer.length) {
-                            return [2 /*return*/, lineBuffer.join("")];
-                        }
-                        lineBuffer = [];
-                        return [3 /*break*/, 6];
-                    case 5:
-                        lineBuffer.push(char);
-                        _a.label = 6;
-                    case 6: return [3 /*break*/, 1];
-                    case 7: return [2 /*return*/, null];
-                }
-            });
-        });
-    };
-    LineStreamer.prototype.next = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var lineBuffer, char;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        lineBuffer = [];
-                        _a.label = 1;
-                    case 1:
-                        if (!this.hasMore())
-                            return [3 /*break*/, 4];
-                        if (!(!this.buffer || this.index >= this.PAGE_SIZE))
-                            return [3 /*break*/, 3];
-                        return [4 /*yield*/, this.readPage()];
-                    case 2:
-                        _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        char = this.buffer[this.index++];
-                        if (char === "\r") {
-                            return [3 /*break*/, 1];
-                        }
-                        if (char === "\n") {
-                            return [3 /*break*/, 4];
-                        }
-                        lineBuffer.push(char);
-                        return [3 /*break*/, 1];
-                    case 4: return [2 /*return*/, lineBuffer.join("")];
-                }
-            });
-        });
-    };
-    return LineStreamer;
-}());
-
-var LineBufferedReader = (function () {
-    function LineBufferedReader(file) {
-        this.streamer = new LineStreamer(file);
-        this.current = "";
-    }
-    LineBufferedReader.prototype.hasMore = function () {
-        return this.streamer.hasMore();
-    };
-    LineBufferedReader.prototype.previous = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                this.useLast = true;
-                return [2 /*return*/];
-            });
-        });
-    };
-    LineBufferedReader.prototype.next = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (this.useLast) {
-                            this.useLast = false;
-                            return [2 /*return*/, this.current];
-                        }
-                        _a = this;
-                        return [4 /*yield*/, this.streamer.next()];
-                    case 1:
-                        _a.current = _b.sent();
-                        return [2 /*return*/, this.current];
-                }
-            });
-        });
-    };
-    LineBufferedReader.prototype.expects = function (startsWith) {
-        return __awaiter(this, void 0, void 0, function () {
-            var read;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!this.hasMore())
-                            return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.next()];
-                    case 1:
-                        read = _a.sent();
-                        if (!read.indexOf(startsWith)) {
-                            return [2 /*return*/, read];
-                        }
-                        return [3 /*break*/, 0];
-                    case 2: return [2 /*return*/, null];
-                }
-            });
-        });
-    };
-    LineBufferedReader.prototype.nextNonEmpty = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var str;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!this.hasMore())
-                            return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.next()];
-                    case 1:
-                        str = _a.sent();
-                        if (str) {
-                            return [2 /*return*/, str];
-                        }
-                        return [3 /*break*/, 0];
-                    case 2: return [2 /*return*/, null];
-                }
-            });
-        });
-    };
-    LineBufferedReader.prototype.nextDataLine = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var line;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.nextNonEmpty()];
-                    case 1:
-                        line = _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        if (!line)
-                            return [3 /*break*/, 4];
-                        if (line.indexOf("#")) {
-                            return [2 /*return*/, line];
-                        }
-                        return [4 /*yield*/, this.nextNonEmpty()];
-                    case 3:
-                        line = _a.sent();
-                        return [3 /*break*/, 2];
-                    case 4: return [2 /*return*/, line];
-                }
-            });
-        });
-    };
-    return LineBufferedReader;
-}());
-
-function fileBufferedReader(e, proj4) {
-    return __awaiter(this, void 0, void 0, function () {
-        var file, options, projectionFn, name;
-        return __generator(this, function (_a) {
-            proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
-            file = e.data.file;
-            options = e.data.options;
-            projectionFn = passThru;
-            if (options && options.from && options.to && options.from !== options.to) {
-                projectionFn = function reproject(from, to) {
-                    return function (coords) {
-                        return proj4(from, to, [coords[0], coords[1]]);
-                    };
-                }(options.from, options.to);
-            }
-            name = file.name;
-            return [2 /*return*/, new DocumentBufferedReader(new LineBufferedReader(file), projectionFn).read()];
-        });
-    });
-}
-function passThru(coords) {
-    return coords;
-}
-
-var Pusher = (function () {
-    function Pusher() {
-        this.complete = false;
-    }
-    return Pusher;
-}());
 
 var StatePusher = (function (_super) {
     __extends(StatePusher, _super);
@@ -1203,6 +438,43 @@ var CoordinateSystemPusher = (function (_super) {
     return CoordinateSystemPusher;
 }(StatePusher));
 
+function flowThru(val) {
+    return val;
+}
+
+function toBool(val) {
+    return "true" === val;
+}
+
+function toColor(val) {
+    if (val) {
+        var parts = val.trim().split(/\s+/g);
+        if (parts.length === 1) {
+            if (parts[0].indexOf("#") === 0) {
+                return parseInt("0x" + parts[0].substring(1));
+            }
+        }
+        return parseFloat(parts[0]) * 255 * 256 * 256 + parseFloat(parts[1]) * 255 * 256 + parseFloat(parts[2]) * 255;
+    }
+    return null;
+}
+
+var Header = (function () {
+    function Header() {
+        this.values = {};
+        this.typeMap = {
+            ivolmap: toBool,
+            imap: toBool,
+            parts: toBool,
+            mesh: toBool,
+            cn: toBool,
+            border: toBool,
+            "*solid*color": toColor
+        };
+    }
+    return Header;
+}());
+
 var HeaderPusher = (function (_super) {
     __extends(HeaderPusher, _super);
     function HeaderPusher() {
@@ -1260,6 +532,10 @@ var TSurfPusher = (function (_super) {
         _this.tsurf = new TSurf();
         _this.zSign = 1;
         _this.readTface = false;
+        _this.verticesBuffer = [];
+        _this.facesBuffer = [];
+        _this.bordersBuffer = [];
+        _this.bstonesBuffer = [];
         return _this;
     }
     Object.defineProperty(TSurfPusher.prototype, "obj", {
@@ -1310,10 +586,13 @@ var TSurfPusher = (function (_super) {
     };
     TSurfPusher.prototype.loadCs = function (line) {
         this.csPusher.push(line);
-        if (this.csPusher.complete && this.csPusher.obj.isValid) {
-            this.tsurf.coordinateSystem = this.csPusher.obj;
-            this.zSign = this.tsurf.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+        if (this.csPusher.complete) {
+            if (this.csPusher.obj.isValid) {
+                this.tsurf.coordinateSystem = this.csPusher.obj;
+                this.zSign = this.tsurf.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
+            }
             this.state++;
+            this.dispatchEvent(new Event("header", this.tsurf));
         }
         return true;
     };
@@ -1328,32 +607,110 @@ var TSurfPusher = (function (_super) {
         if (line === "END") {
             this.complete = true;
             this.state = 99;
+            this.flushVertices();
+            this.flushFaces();
+            this.flushBstones();
+            this.flushBorders();
+            this.tsurf.vertices = [];
+            this.dispatchEvent(new Event("complete", {
+                header: this.tsurf.header,
+                coordinateSystem: this.tsurf.coordinateSystem,
+                bbox: this.tsurf.bbox
+            }));
         }
         else {
             var tsurf = this.tsurf;
-            if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
+            var index = line.indexOf("VRTX");
+            if (index === 0 || index === 1) {
                 var v = vertex(line, this.projectionFn, this.zSign);
                 tsurf.vertices[v.index] = v.all;
+                this.tsurf.bbox = BoxFactory.expand(this.tsurf.bbox, v.all);
+                this.checkVertices(v.all); // Got to hang on to vertices for easy lookup
             }
             else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
                 var a = atom(line);
-                tsurf.vertices[a.index] = tsurf.vertices[a.vertexId];
+                this.checkVertices(tsurf.vertices[a.index] = tsurf.vertices[a.vertexId]); // Got to hang on to vertices for easy lookup
             }
             else if (line.indexOf("TRGL") === 0) {
-                tsurf.faces.push(face(line).abc);
+                var next = face(line).abc;
+                FaceFactory.computeNormal(next, this.tsurf.vertices);
+                // tsurf.faces.push(next); // We don't need faces anymore now that we are event driven
+                this.checkFaces(next);
             }
             else if (line.indexOf("BSTONE") === 0) {
-                tsurf.bstones.push(bstone(line));
+                var bs = bstone(line);
+                // tsurf.bstones.push(bs); // We don't need bstones anymore now that we are event driven
+                this.checkBstones(bs);
             }
             else if (line.indexOf("BORDER") === 0) {
                 var b = border(line);
-                tsurf.borders[b.id] = [b.vertices[0], b.vertices[1]];
+                // tsurf.borders[b.id] = [b.vertices[0], b.vertices[1]]; // We don't need borders anymore now that we are event driven
+                this.checkBorders([b.vertices[0], b.vertices[1]]);
             }
         }
         return true;
     };
+    TSurfPusher.prototype.checkVertices = function (vertex$$1) {
+        this.verticesBuffer.push(vertex$$1);
+        if (this.verticesBuffer.length >= TSurfPusher.PAGE_SIZE) {
+            this.flushVertices();
+        }
+    };
+    TSurfPusher.prototype.flushVertices = function () {
+        this.verticesBuffer = this.flush("vertices", this.verticesBuffer);
+    };
+    TSurfPusher.prototype.checkFaces = function (face$$1) {
+        this.facesBuffer.push(face$$1);
+        if (this.facesBuffer.length >= TSurfPusher.PAGE_SIZE) {
+            this.flushFaces();
+        }
+    };
+    TSurfPusher.prototype.flushFaces = function () {
+        this.facesBuffer = this.flush("faces", this.facesBuffer);
+    };
+    TSurfPusher.prototype.checkBorders = function (face$$1) {
+        this.bordersBuffer.push(face$$1);
+        if (this.bordersBuffer.length >= TSurfPusher.PAGE_SIZE) {
+            this.flushBorders();
+        }
+    };
+    TSurfPusher.prototype.flushBorders = function () {
+        this.bordersBuffer = this.flush("borders", this.bordersBuffer);
+    };
+    TSurfPusher.prototype.checkBstones = function (face$$1) {
+        this.bstonesBuffer.push(face$$1);
+        if (this.bstonesBuffer.length >= TSurfPusher.PAGE_SIZE) {
+            this.flushBstones();
+        }
+    };
+    TSurfPusher.prototype.flushBstones = function () {
+        this.bstonesBuffer = this.flush("bstones", this.bstonesBuffer);
+    };
+    TSurfPusher.prototype.flush = function (name, arr) {
+        if (arr.length) {
+            this.dispatchEvent(new Event(name, arr));
+        }
+        return [];
+    };
     return TSurfPusher;
 }(StatePusher));
+TSurfPusher.PAGE_SIZE = 64 * 1024;
+
+function segment(seg) {
+    var parts = seg.split(/\s+/g);
+    return [
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2]) - 1
+    ];
+}
+
+var PLineHeader = (function (_super) {
+    __extends(PLineHeader, _super);
+    function PLineHeader() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return PLineHeader;
+}(Header));
 
 var PLineHeaderPusher = (function (_super) {
     __extends(PLineHeaderPusher, _super);
@@ -1382,6 +739,18 @@ var PLineHeaderPusher = (function (_super) {
     return PLineHeaderPusher;
 }(HeaderPusher));
 
+var PLine = (function (_super) {
+    __extends(PLine, _super);
+    function PLine() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = "PLine";
+        _this.vertices = [];
+        _this.lines = [];
+        return _this;
+    }
+    return PLine;
+}(Type));
+
 var PLinePusher = (function (_super) {
     __extends(PLinePusher, _super);
     /**
@@ -1391,6 +760,8 @@ var PLinePusher = (function (_super) {
         var _this = _super.call(this) || this;
         _this.projectionFn = projectionFn;
         _this.pline = new PLine();
+        _this.verticesBuffer = [];
+        _this.segmentsBuffer = [];
         return _this;
     }
     Object.defineProperty(PLinePusher.prototype, "obj", {
@@ -1448,16 +819,13 @@ var PLinePusher = (function (_super) {
                 this.pline.coordinateSystem = this.child.obj;
                 this.zSign = this.pline.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
             }
+            this.dispatchEvent(new Event("header", this.pline));
         }
         return response;
     };
     PLinePusher.prototype.expectIline = function (line) {
         if (line.startsWith("ILINE")) {
             this.state++;
-            this.startIndex = 1;
-            this.lastIndex = 1;
-            this.hasSeg = false;
-            this.lineSegments = [];
         }
         return true;
     };
@@ -1467,36 +835,78 @@ var PLinePusher = (function (_super) {
         if (!line) {
             return true;
         }
+        var pline = this.pline;
         if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
             var v = vertex(line, this.projectionFn, this.zSign);
-            this.pline.vertices[v.index] = v.all;
-            this.lastIndex = v.index;
+            this.verticesBuffer[v.index] = v.all;
+            pline.bbox = BoxFactory.expand(pline.bbox, v.all);
         }
         else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
             var a = atom(line);
-            this.pline.vertices[a.index] = this.pline.vertices[a.vertexId];
+            var v = this.verticesBuffer[a.vertexId];
+            this.verticesBuffer[a.index] = v;
         }
         else if (line.indexOf("SEG") === 0) {
-            this.lineSegments.push(segment(line));
-            this.hasSeg = true;
+            var seg = segment(line);
+            this.segmentsBuffer.push(this.verticesBuffer[seg[0]]);
+            this.segmentsBuffer.push(this.verticesBuffer[seg[1]]);
+            this.checkSegments();
         }
         else if (line.indexOf("ILINE") === 0 || line.indexOf("END") === 0) {
             this.complete = line.indexOf("END") === 0;
-            if (!this.hasSeg && this.lastIndex > this.startIndex) {
-                // We have to step over every vertex pair from start index to lastIndex
-                for (var i = this.startIndex; i < this.lastIndex; i++) {
-                    this.lineSegments.push([i, i + 1]);
-                }
+            // The segments never go backwards and we are using the index.
+            this.verticesBuffer = [];
+            if (this.complete) {
+                this.flushSegments();
+                this.dispatchEvent(new Event("complete", {
+                    header: pline.header,
+                    coordinateSystem: pline.coordinateSystem,
+                    bbox: pline.bbox
+                }));
             }
-            this.pline.lines.push(this.lineSegments);
-            this.lineSegments = [];
-            this.startIndex = this.lastIndex + 1;
-            this.hasSeg = false;
         }
         return true;
     };
+    PLinePusher.prototype.checkSegments = function () {
+        if (this.segmentsBuffer.length >= PLinePusher.PAGE_SIZE) {
+            this.flushSegments();
+        }
+    };
+    PLinePusher.prototype.flushSegments = function () {
+        // They are just pairs of vertices, nothing special
+        this.segmentsBuffer = this.flush("vertices", this.segmentsBuffer);
+    };
+    PLinePusher.prototype.flush = function (name, arr) {
+        if (arr.length) {
+            this.dispatchEvent(new Event(name, arr));
+        }
+        return [];
+    };
     return PLinePusher;
 }(StatePusher));
+PLinePusher.PAGE_SIZE = 32 * 1024;
+
+var TSolid = (function (_super) {
+    __extends(TSolid, _super);
+    function TSolid() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = "TSolid";
+        _this.vertices = [];
+        _this.tetras = [];
+        return _this;
+    }
+    return TSolid;
+}(Type));
+
+function tetra(tetra) {
+    var parts = tetra.split(/\s+/g);
+    return [
+        parseInt(parts[1]),
+        parseInt(parts[2]),
+        parseInt(parts[3]),
+        parseInt(parts[4])
+    ];
+}
 
 var TSolidPusher = (function (_super) {
     __extends(TSolidPusher, _super);
@@ -1585,6 +995,25 @@ var TSolidPusher = (function (_super) {
     return TSolidPusher;
 }(StatePusher));
 
+var VSet = (function (_super) {
+    __extends(VSet, _super);
+    function VSet() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = "VSet";
+        _this.vertices = [];
+        return _this;
+    }
+    return VSet;
+}(Type));
+
+var VSetHeader = (function (_super) {
+    __extends(VSetHeader, _super);
+    function VSetHeader() {
+        return _super !== null && _super.apply(this, arguments) || this;
+    }
+    return VSetHeader;
+}(Header));
+
 var VSetHeaderPusher = (function (_super) {
     __extends(VSetHeaderPusher, _super);
     function VSetHeaderPusher() {
@@ -1617,6 +1046,7 @@ var VSetPusher = (function (_super) {
     function VSetPusher(projectionFn) {
         var _this = _super.call(this) || this;
         _this.projectionFn = projectionFn;
+        _this.verticesBuffer = [];
         _this.vset = new VSet();
         return _this;
     }
@@ -1664,6 +1094,7 @@ var VSetPusher = (function (_super) {
             this.vset.header = this.child.obj;
             this.child = new CoordinateSystemPusher();
             this.zSign = 1;
+            this.dispatchEvent(new Event("header", this.vset));
         }
         return accepted;
     };
@@ -1682,20 +1113,53 @@ var VSetPusher = (function (_super) {
         if (line) {
             if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
                 var v = vertex(line, this.projectionFn, this.zSign);
-                this.vset.vertices[v.index] = v.all;
+                this.vset.bbox = BoxFactory.expand(this.vset.bbox, v.all);
+                this.checkVertices(v.all);
             }
             else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
                 var a = atom(line);
-                this.vset.vertices[a.index] = this.vset.vertices[a.vertexId];
+                this.checkVertices(this.vset.vertices[a.vertexId]);
             }
             else if (line.startsWith("END") && !line.startsWith("END_")) {
                 this.complete = true;
+                this.flushVertices();
+                this.dispatchEvent(new Event("complete", {
+                    header: this.vset.header,
+                    coordinateSystem: this.vset.coordinateSystem,
+                    bbox: this.vset.bbox
+                }));
             }
         }
         return true;
     };
+    VSetPusher.prototype.checkVertices = function (vertex$$1) {
+        this.verticesBuffer.push(vertex$$1);
+        if (this.verticesBuffer.length >= VSetPusher.PAGE_SIZE) {
+            this.flushVertices();
+        }
+    };
+    VSetPusher.prototype.flushVertices = function () {
+        this.verticesBuffer = this.flush("vertices", this.verticesBuffer);
+    };
+    VSetPusher.prototype.flush = function (name, arr) {
+        if (arr.length) {
+            this.dispatchEvent(new Event(name, arr));
+        }
+        return [];
+    };
     return VSetPusher;
 }(StatePusher));
+VSetPusher.PAGE_SIZE = 64 * 1024;
+
+var Unknown = (function (_super) {
+    __extends(Unknown, _super);
+    function Unknown() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this.type = "Unknown";
+        return _this;
+    }
+    return Unknown;
+}(Type));
 
 var UnknownPusher = (function (_super) {
     __extends(UnknownPusher, _super);
@@ -1724,6 +1188,13 @@ var UnknownPusher = (function (_super) {
     return UnknownPusher;
 }(Pusher));
 
+var TypeFactory = (function () {
+    function TypeFactory() {
+        this.isValid = false;
+    }
+    return TypeFactory;
+}());
+
 var TypeFactoryPusher = (function (_super) {
     __extends(TypeFactoryPusher, _super);
     function TypeFactoryPusher(projectionFn) {
@@ -1751,6 +1222,7 @@ var TypeFactoryPusher = (function (_super) {
         return accepted;
     };
     TypeFactoryPusher.prototype.create = function (line) {
+        var _this = this;
         line = line.trim();
         var parts = line.split(/\s+/g);
         this.typeFactory.isValid = parts.length === 3
@@ -1774,18 +1246,56 @@ var TypeFactoryPusher = (function (_super) {
                 this.type = new UnknownPusher(this.projectionFn);
             }
         }
+        var self = this;
+        EventNames.names.forEach(function (name) { return _this.type.addEventListener(name, eventHandler); });
         return this.typeFactory.isValid;
+        function eventHandler(event) {
+            // console.log("TFP: " + event.type);
+            self.dispatchEvent(event);
+        }
     };
     return TypeFactoryPusher;
 }(Pusher));
 
+var Document = (function () {
+    function Document() {
+        this.types = [];
+    }
+    return Document;
+}());
+
+var GocadDocument = (function (_super) {
+    __extends(GocadDocument, _super);
+    function GocadDocument() {
+        var _this = _super.call(this) || this;
+        _this.types = [];
+        return _this;
+    }
+    return GocadDocument;
+}(Document));
+
 var DocumentPusher = (function (_super) {
     __extends(DocumentPusher, _super);
-    function DocumentPusher(projectionFn) {
+    function DocumentPusher(options, proj4) {
         var _this = _super.call(this) || this;
-        _this.projectionFn = projectionFn;
-        _this.document = new Document();
-        _this.typefactorypusher = new TypeFactoryPusher(_this.projectionFn);
+        _this.proj4 = proj4;
+        _this.eventHandler = function (event) {
+            // console.log("DP: " + event.type);
+            _this.dispatchEvent(event);
+        };
+        _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+        if (options && options.from && options.to && options.from !== options.to) {
+            _this.projectionFn = function reproject(from, to) {
+                return function (coords) {
+                    return proj4(from, to, [coords[0], coords[1]]);
+                };
+            }(options.from, options.to);
+        }
+        else {
+            _this.projectionFn = passThru;
+        }
+        _this.document = new GocadDocument();
+        _this.typefactorypusher = _this.createTypeFactoryPusher(_this.projectionFn);
         return _this;
     }
     Object.defineProperty(DocumentPusher.prototype, "obj", {
@@ -1807,28 +1317,60 @@ var DocumentPusher = (function (_super) {
         if (this.typefactorypusher.complete) {
             this.complete = true;
             this.document.types.push(this.typefactorypusher.obj);
-            this.typefactorypusher = new TypeFactoryPusher(this.projectionFn);
+            this.destroyTypeFactoryPusher(this.typefactorypusher);
+            this.typefactorypusher = this.createTypeFactoryPusher(this.projectionFn);
         }
         return true;
     };
+    DocumentPusher.prototype.createTypeFactoryPusher = function (projectionFn) {
+        var _this = this;
+        var self = this;
+        var pusher = new TypeFactoryPusher(projectionFn);
+        EventNames.names.forEach(function (name) {
+            pusher.addEventListener(name, _this.eventHandler);
+        });
+        return pusher;
+    };
+    DocumentPusher.prototype.destroyTypeFactoryPusher = function (typefactorypusher) {
+        var _this = this;
+        EventNames.names.forEach(function (name) {
+            typefactorypusher.removeEventListener(name, _this.eventHandler);
+        });
+    };
     return DocumentPusher;
 }(Pusher));
+function passThru(coords) {
+    return coords;
+}
 
-var LinesPusher = (function () {
-    function LinesPusher(file, options, callback) {
+var LinesToLinePusher = (function () {
+    function LinesToLinePusher(callback) {
+        this.callback = callback;
+    }
+    LinesToLinePusher.prototype.receiver = function (lines) {
+        var self = this;
+        lines.forEach(function (line) {
+            self.callback(line);
+        });
+    };
+    return LinesToLinePusher;
+}());
+
+var LinesPagedPusher = (function () {
+    function LinesPagedPusher(file, options, callback) {
         this.file = file;
         this.callback = callback;
-        this.blockSize = 1024 * 1024; // A bit at a time should be harmless
+        this.blockSize = 16 * 1024; // A bit at a time should be harmless
         this.file = file;
         this.length = file.size;
         this.pageNo = -1;
         this.index = 0;
         this.blockSize = options.blockSize ? options.blockSize : this.blockSize;
-        this.reader = new FileReader();
+        this.reader;
         this.lineBuffer = [];
-        this.start();
+        this.reader = new FileReader();
     }
-    LinesPusher.prototype.start = function () {
+    LinesPagedPusher.prototype.start = function () {
         return __awaiter(this, void 0, void 0, function () {
             var result, lines, lineResult, _a, group;
             return __generator(this, function (_b) {
@@ -1839,8 +1381,7 @@ var LinesPusher = (function () {
                         lines = [];
                         _b.label = 2;
                     case 2:
-                        if (!result)
-                            return [3 /*break*/, 8];
+                        if (!result) return [3 /*break*/, 8];
                         lineResult = this.next();
                         _a = lineResult.state;
                         switch (_a) {
@@ -1852,7 +1393,13 @@ var LinesPusher = (function () {
                     case 3:
                         group = lines;
                         lines = [];
-                        this.callback(group);
+                        try {
+                            this.callback(group);
+                        }
+                        catch (e) {
+                            console.error(e);
+                            console.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
+                        }
                         return [4 /*yield*/, this.read()];
                     case 4:
                         result = _b.sent();
@@ -1863,7 +1410,13 @@ var LinesPusher = (function () {
                     case 6:
                         lines.push(lineResult.line);
                         if (lines.length) {
-                            this.callback(lines);
+                            try {
+                                this.callback(lines);
+                            }
+                            catch (e) {
+                                console.error(e);
+                                console.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
+                            }
                         }
                         result = false;
                         return [3 /*break*/, 7];
@@ -1873,37 +1426,47 @@ var LinesPusher = (function () {
             });
         });
     };
-    LinesPusher.prototype.read = function () {
+    LinesPagedPusher.prototype.read = function () {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
-            var self, start, blob;
+            var self, start;
             return __generator(this, function (_a) {
                 this.pageNo++;
                 this.index = 0;
                 self = this;
                 start = this.pageNo * this.blockSize;
-                blob = this.file.slice(start, start + this.blockSize);
-                this.reader.readAsText(blob);
+                console.log("Block size: " + this.blockSize + ", file size: " + this.length);
                 return [2 /*return*/, new Promise(function (resolve) {
                         if (start >= _this.length) {
                             resolve(false);
                             return;
                         }
-                        self.reader.onloadend = function (evt) {
-                            if (evt.target["readyState"] === FileReader.prototype.DONE) {
-                                // console.log("Reading page " + self.pageNo);
-                                self.buffer = evt.target["result"];
-                                resolve(_this.hasMore());
-                            }
-                        };
+                        try {
+                            self.reader.onloadend = function (evt) {
+                                console.log("We have loaded with ready state = " + evt.target["readyState"]);
+                                if (evt.target["readyState"] === FileReader.prototype.DONE) {
+                                    console.log("Reading page " + self.pageNo);
+                                    self.buffer = evt.target["result"];
+                                    resolve(_this.hasMore());
+                                }
+                            };
+                            self.reader.onerror = function (evt) {
+                                console.log("What do you mean, error");
+                            };
+                            var blob = self.file.slice(start, start + self.blockSize);
+                            self.reader.readAsText(blob);
+                        }
+                        catch (e) {
+                            console.log(e);
+                        }
                     })];
             });
         });
     };
-    LinesPusher.prototype.hasMore = function () {
+    LinesPagedPusher.prototype.hasMore = function () {
         return this.index + this.blockSize * this.pageNo < this.length - 1;
     };
-    LinesPusher.prototype.next = function () {
+    LinesPagedPusher.prototype.next = function () {
         while (this.hasMore()) {
             if (!this.buffer || this.index >= this.blockSize) {
                 return { state: "more" };
@@ -1924,71 +1487,15 @@ var LinesPusher = (function () {
             line: line
         };
     };
-    return LinesPusher;
+    return LinesPagedPusher;
 }());
-
-var LinesToLinePusher = (function () {
-    function LinesToLinePusher(callback) {
-        this.callback = callback;
-    }
-    LinesToLinePusher.prototype.receiver = function (lines) {
-        var self = this;
-        lines.forEach(function (line) {
-            self.callback(line);
-        });
-    };
-    return LinesToLinePusher;
-}());
-
-var FilePusher = (function () {
-    function FilePusher(file, options, proj4) {
-        this.file = file;
-        this.options = options;
-        this.proj4 = proj4;
-        this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
-        if (options && options.from && options.to && options.from !== options.to) {
-            this.projectionFn = function reproject(from, to) {
-                return function (coords) {
-                    return proj4(from, to, [coords[0], coords[1]]);
-                };
-            }(options.from, options.to);
-        }
-        else {
-            this.projectionFn = passThru$1;
-        }
-    }
-    FilePusher.prototype.start = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            var name;
-            return __generator(this, function (_a) {
-                name = this.file.name;
-                return [2 /*return*/, new Promise(function (resolve) {
-                        var pusher = new DocumentPusher(_this.projectionFn);
-                        var linesToLinePusher = new LinesToLinePusher(function (line) {
-                            pusher.push(line);
-                            if (pusher.complete) {
-                                resolve(pusher.obj);
-                            }
-                        });
-                        new LinesPusher(_this.file, _this.options, function (lines) {
-                            linesToLinePusher.receiver(lines);
-                        });
-                    })];
-            });
-        });
-    };
-    return FilePusher;
-}());
-function passThru$1(coords) {
-    return coords;
-}
 
 // Rollup the libs as used by the web workers.
 // These are basically your domain objects, utilities, readers and transformers
 
-exports.fileBufferedReader = fileBufferedReader;
-exports.FilePusher = FilePusher;
+exports.DocumentPusher = DocumentPusher;
+exports.LinesToLinePusher = LinesToLinePusher;
+exports.LinesPagedPusher = LinesPagedPusher;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

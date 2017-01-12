@@ -9,12 +9,15 @@ importScripts('../resources/polyfills.js',
          var n = Date.now();
          if(document) {
             console.log("Processed document in " + (n - t)/1000 + " s");
-            context.postMessage(document);
+            context.postMessage(JSON.stringify(document));
          } else {
-            context.postMessage({});
+            context.postMessage("{}");
          }
          console.log("Proces finished in " + (Date.now() - t)/1000 + " s");
          context.close()
+      }).catch(function(err) {
+         console.error("We failed in the gocad stream");
+         console.error(err);
       });
    }, false);
 
