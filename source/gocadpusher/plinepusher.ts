@@ -1,7 +1,9 @@
 import { atom } from "../gocad/atom";
 import { segment } from "../gocad/segment";
 import { vertex } from "../gocad/vertex";
+import { BoxFactory } from "../factory/boxfactory";
 import { CoordinateSystemPusher } from "./coordinatesystempusher";
+import { Event } from "../domain/event";
 import { PLineHeader } from "../gocad/plineheader";
 import { PLineHeaderPusher } from "./plineheaderpusher";
 import { PLine } from "../gocad/pline";
@@ -9,13 +11,12 @@ import { Pusher } from "./pusher";
 import { StatePusher } from "./statepusher";
 
 export class PLinePusher extends StatePusher<PLine>  {
+   static PAGE_SIZE = 32 * 1024;
    pline: PLine;
    child: Pusher<any>;
    zSign: number;
-   startIndex: number;
-   lastIndex: number;
-   hasSeg: boolean;
-   lineSegments: number[][];
+   verticesBuffer: any[];
+   segmentsBuffer: any[];
 
    /**
     * We come in here on the next line
@@ -23,6 +24,8 @@ export class PLinePusher extends StatePusher<PLine>  {
    constructor(public projectionFn?: Function) {
       super();
       this.pline = new PLine();
+      this.verticesBuffer = [];
+      this.segmentsBuffer = [];
    }
 
    get obj(): PLine {
@@ -82,6 +85,7 @@ export class PLinePusher extends StatePusher<PLine>  {
             this.pline.coordinateSystem = this.child.obj;
             this.zSign = this.pline.coordinateSystem["ZPOSITIVE"] === "Depth" ? -1 : 1;
          }
+         this.dispatchEvent(new Event("header", this.pline));
       }
       return response;
    }
@@ -89,10 +93,6 @@ export class PLinePusher extends StatePusher<PLine>  {
    private expectIline(line) {
       if (line.startsWith("ILINE")) {
          this.state++;
-         this.startIndex = 1;
-         this.lastIndex = 1;
-         this.hasSeg = false;
-         this.lineSegments = [];
       }
       return true;
    }
@@ -103,30 +103,52 @@ export class PLinePusher extends StatePusher<PLine>  {
          return true;
       }
 
+      let pline = this.pline;
       if (line.indexOf("VRTX") === 0 || line.indexOf("PVRTX") === 0) {
          let v = vertex(line, this.projectionFn, this.zSign);
-         this.pline.vertices[v.index] = v.all;
-         this.lastIndex = v.index;
+         this.verticesBuffer[v.index] = v.all;
+         pline.bbox = BoxFactory.expand(pline.bbox, v.all);
       } else if (line.indexOf("ATOM") === 0 || line.indexOf("PATOM") === 0) {
          let a = atom(line);
-         this.pline.vertices[a.index] = this.pline.vertices[a.vertexId];
+         let v = this.verticesBuffer[a.vertexId];
+         this.verticesBuffer[a.index] = v;
       } else if (line.indexOf("SEG") === 0) {
-         this.lineSegments.push(segment(line));
-         this.hasSeg = true;
+         let seg = segment(line);
+         this.segmentsBuffer.push(this.verticesBuffer[seg[0]]);
+         this.segmentsBuffer.push(this.verticesBuffer[seg[1]]);
+         this.checkSegments();
       } else if (line.indexOf("ILINE") === 0 || line.indexOf("END") === 0) {
          this.complete = line.indexOf("END") === 0;
-         if (!this.hasSeg && this.lastIndex > this.startIndex) {
-            // We have to step over every vertex pair from start index to lastIndex
-            for (let i = this.startIndex; i < this.lastIndex; i++) {
-               this.lineSegments.push([i, i + 1]);
-            }
-         }
-         this.pline.lines.push(this.lineSegments);
-         this.lineSegments = [];
-         this.startIndex = this.lastIndex + 1;
-         this.hasSeg = false;
-      }
+         // The segments never go backwards and we are using the index.
+         this.verticesBuffer = [];
 
+         if (this.complete) {
+            this.flushSegments();
+            this.dispatchEvent(new Event("complete", {
+               header: pline.header,
+               coordinateSystem: pline.coordinateSystem,
+               bbox: pline.bbox
+            }));
+         }
+      }
       return true;
+   }
+
+   private checkSegments() {
+      if (this.segmentsBuffer.length >= PLinePusher.PAGE_SIZE) {
+         this.flushSegments();
+      }
+   }
+
+   private flushSegments() {
+      // They are just pairs of vertices, nothing special
+      this.segmentsBuffer = this.flush("vertices", this.segmentsBuffer);
+   }
+
+   private flush(name: string, arr: any[]): any[] {
+      if (arr.length) {
+         this.dispatchEvent(new Event(name, arr));
+      }
+      return [];
    }
 }
