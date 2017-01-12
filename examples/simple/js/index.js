@@ -1,4 +1,29 @@
 (function (global, Explorer3d) {
+   /*
+    * Set up some settings. Just configuration and data.
+    */
+   var appOptions = {
+      workerCount: 7,
+      browser: "modern",
+      blockSize: 16 * 1024,
+      hasWebGl: webgl()
+   };
+
+   var refData = {
+      preWebGlMessage: "Your browser is not capable of rendering 3D.\n" +
+         "Try a newer browser like the latest Firefox, Edge or Chrome\n" +
+         "from Mozilla, Microsoft or Google respectively.",
+      ie11Warning: "Your browser is a bit old to handle big files.\n" +
+         "The latest Firefox or Edge is the best for large files.\n" +
+         "Chrome is OK but struggles earlier than Firefox or Edge."
+   };
+
+   if(navigator.userAgent && navigator.userAgent.indexOf("Trident/") > 0) {
+      appOptions.browser = "ie11";
+      appOptions.blockSize = 2 * 1024 * 1024; // IE11 struggles with big files.
+      appOptions.fileSizeLimit = 20 * appOptions.blockSize; // IE11 struggles with memory allocation.
+   }
+
    // Keep all the DOM stuff together. Make the abstraction to the HTML here
    var dom = {
       verticalExageration: document.getElementById("exagerate"),
@@ -17,81 +42,108 @@
       }
    };
 
+/******************************************************************
+ * Here is the calling of the API.
+ ****************************************************************** */
+
    // Grab ourselves a world factory
    var factory = new Explorer3d.DefaultWorldFactory(dom.target);
 
    // Where are my workers? Just above here in this case. We have mapped the dependency in /dist. It's base is relative to the HTML page.
-   Explorer3d.Parser.workerBase = "../dist/workers/";
+   Explorer3d.Parser.codeBase = "../dist";
 
    // You could lazy load these. I nearly did. I would if it was part of a bigger app.
-   let geojsonParser = new Explorer3d.GeoJsonParser(),
-      // Read files at 1 MB per read.
-      gocadParser = new Explorer3d.GocadPusherParser();
+   let gocadParser = new Explorer3d.GocadPusherParser(appOptions);
 
    // Proxy the parser(s) and throttle the threads.  You can bypass this for unbounded threads.
-   // Depending how many cores you have will determine actual usage. With 8 cores the bottle nec
-   gocadParser = new Explorer3d.ThrottleProxyParser(gocadParser,  3);
+   // Depending how many cores you have will determine actual usage. With 8 cores the bottle neck will be
+   // the UI thread. That would be 7 threads funneling into 1.
+   gocadParser = new Explorer3d.ThrottleProxyParser(gocadParser, appOptions.workerCount);
 
-   // Use this one for local testing
-   // gocadParser = new Explorer3d.LocalGocadPusherParser()
+   // Use this one for local testing. It's much slower but its easier to debug locally rather than in a web worker.
+   // gocadParser = new Explorer3d.LocalGocadPusherParser(appOptions)
 
    // Add a listener to the file drop area.
    let fileDrop = new Explorer3d.FileDrop(dom.fileDrop, function handler(file) {
+      // What are they even trying for? No dinosaurs allowed.
+      if (!appOptions.hasWebGl) {
+         alert(preWebGlMessage);
+         return;
+      }
+
+      if(appOptions.fileSizeLimit) {
+         // While size isn't standard the only browsers we care about have it.
+         if(file.size && file.size > appOptions.fileSizeLimit) {
+            alert(ie11Warning);
+            return;
+         }
+      }
       // See if we set projections
       let options = {
          from: dom.projection.from,
          to:   dom.projection.to,
          blockSize: 1024 * 1024
       };
+      Object.assign(options, appOptions);
 
-      let promise;
-      // Arbitrate the type by extension
-      if (file.name.indexOf(".json") > 0) {
-         promise = geojsonParser.parse({ file: file, options: options });
-      } else {
-         promise = gocadParser.parse({ file: file, options: options });
-      }
+      let promise = gocadParser.parse({ file: file, options: options });
 
       // Off to the parser to do its best
-      promise.then(document => {
-         // We got back a document so transform and show.
-         var response = factory.show(Explorer3d.Transformer.transform(document));
+      console.log(seconds() + ": We have started the process.");
+      promise.then(function(data) {
+         if (data.eventName) {
+            console.log(data);
+         } else {
+            // We got back a document so transform and show.
+            var response = factory.show(data);
+            console.log(seconds() + ": We have shown the document");
+         }
+      }).catch(function(err) {
+         console.error("We failed in the simple example");
+         console.error(err);
       });
    });
+
+/********************************************************
+ * End of calling the API. Now the UI.
+ * This is just plain old HTML with no framework.
+ * There are some UI helper calls provided by the API.
+ ******************************************************** */
 
    /**
     * Some UI to keep the users happy
     */
 
    // We'll attach something to change vertical exageration now.
-   let verticalExagerate = new Explorer3d.VerticalExagerate(factory).onChange(() => {
+   let verticalExagerate = new Explorer3d.VerticalExagerate(factory).onChange(function() {
+      console.log("We have a trigger to vertical exagerate");
       verticalExagerate.set(+dom.verticalExageration.value);
    });
-   dom.verticalExageration.addEventListener("change", () => {
+   dom.verticalExageration.addEventListener("change", function() {
       verticalExagerate.set(+dom.verticalExageration.value);
    });
 
    // Wire in the ability to turn labels on and off.
-   var labelSwitch = new Explorer3d.LabelSwitch(factory).onChange(() => {
+   var labelSwitch = new Explorer3d.LabelSwitch(factory).onChange(function() {
       labelSwitch.set(dom.labelSwitch.checked);
    });
-   dom.labelSwitch.addEventListener("change", () => {
+   dom.labelSwitch.addEventListener("change", function() {
       labelSwitch.set(dom.labelSwitch.checked);
    });
 
    // Get a handle on children each time it changes.
-   factory.addEventListener("objects.changed", (event) => {
+   factory.addEventListener("objects.changed", function(event) {
       let count = 1;
       let target = dom.objectsList;
       target.innerHTML = "";
       target.className = "";
 
       // sort by center z value
-      event.objects.sort((a, b) => {
-         a.geometry.computeBoundingSphere();
-         b.geometry.computeBoundingSphere();
+      event.objects.sort(function(a, b) {
+         if (!a.geometry.boundingSphere) a.geometry.computeBoundingSphere();
+         if (!b.geometry.boundingSphere) b.geometry.computeBoundingSphere();
          return b.geometry.boundingSphere.center.z - a.geometry.boundingSphere.center.z
-      }).forEach(obj => {
+      }).forEach(function(obj) {
          let template = document.createElement("div");
          template.className = "layer";
          let color = obj.material.color.getStyle();
@@ -130,9 +182,21 @@
    });
 
 
-
    // Pretty simple. Get the factory to reset.
-   dom.selfDestruct.addEventListener("click", (event) => {
+   dom.selfDestruct.addEventListener("click", function(event) {
       factory.destroy();
    });
+
+   function seconds() {
+      return (Date.now() % 100000) / 1000;
+   }
+
+   function webgl() {
+		try {
+			var canvas = document.createElement( 'canvas' );
+         return !! ( window.WebGLRenderingContext && ( canvas.getContext( 'webgl' ) || canvas.getContext( 'experimental-webgl' ) ) );
+		} catch ( e ) {
+			return false;
+		}
+   }
 })(window, Explorer3d)
