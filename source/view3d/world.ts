@@ -174,7 +174,6 @@ export class World {
       this.axisHelper(false);
       this.axisHelper(state);
       this.updateLights();
-
    }
 
    private addLabels(scale: number): THREE.Object3D {

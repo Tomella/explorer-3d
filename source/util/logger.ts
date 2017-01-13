@@ -12,31 +12,31 @@ export class Logger {
       Logger._level = num;
    }
 
-   static log(line, obj) {
+   static log(line, obj?) {
       if (Logger._level >= Logger.LOG_ALL) {
          Logger._log(line, obj);
       }
    }
 
-   static error(line, obj) {
+   static error(line, obj?) {
       if (Logger._level >= Logger.LOG_ERROR) {
          Logger._log("ERROR: " + line, obj);
       }
    }
 
-   static info(line, obj) {
+   static info(line, obj?) {
       if (Logger._level >= Logger.LOG_INFO) {
          Logger._log("INFO: " + line, obj);
       }
    }
 
-   static warn(line, obj) {
+   static warn(line, obj?) {
       if (Logger._level >= Logger.LOG_WARN) {
          Logger._log("WARN: " + line, obj);
       }
    }
 
-   static private _log(line, obj?) {
+   private static  _log(line, obj?) {
       if (obj) {
          console.log(line, obj);
       } else {

@@ -69,18 +69,18 @@
    // Use this one for local testing. It's much slower but its easier to debug locally rather than in a web worker.
    // gocadParser = new Explorer3d.LocalGocadPusherParser(appOptions)
 
-   // Add a listener to the file drop area.
+   // Add a listener to the file drop area. This is where the action starts.
    let fileDrop = new Explorer3d.FileDrop(dom.fileDrop, function handler(file) {
       // What are they even trying for? No dinosaurs allowed.
       if (!appOptions.hasWebGl) {
-         alert(preWebGlMessage);
+         alert(refData.preWebGlMessage);
          return;
       }
 
       if(appOptions.fileSizeLimit) {
          // While size isn't standard the only browsers we care about have it.
          if(file.size && file.size > appOptions.fileSizeLimit) {
-            alert(ie11Warning);
+            alert(refData.ie11Warning);
             return;
          }
       }
