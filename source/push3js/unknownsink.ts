@@ -1,5 +1,6 @@
 import { Event } from "../domain/event";
 import { Pipeline } from "./pipeline";
+import { Logger } from "../util/logger";
 
 /**
  * It just gobbles up the events until complete. Sort of a bit bucket.
