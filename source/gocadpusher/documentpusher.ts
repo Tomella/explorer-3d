@@ -13,9 +13,10 @@ export class DocumentPusher extends Pusher<GocadDocument> {
 
    constructor(options: any, public proj4?: any) {
       super();
-      this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-      if (options && options.from && options.to && options.from !== options.to) {
+      // They can pick a projection but if the app hasn't loaded the proj4 library we don't do anything as well
+      if (options && options.from && options.to && options.from !== options.to && proj4) {
+         proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
          this.projectionFn = function reproject(from, to) {
             return function (coords) {
                return proj4(from, to, [coords[0], coords[1]]);
@@ -24,6 +25,7 @@ export class DocumentPusher extends Pusher<GocadDocument> {
       } else {
          this.projectionFn = passThru;
       }
+
       this.document = new GocadDocument();
       this.typefactorypusher = this.createTypeFactoryPusher(this.projectionFn);
    }
