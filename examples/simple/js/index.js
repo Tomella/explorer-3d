@@ -27,7 +27,7 @@
 
    // Keep all the DOM stuff together. Make the abstraction to the HTML here
    var dom = {
-      verticalExageration: document.getElementById("exagerate"),
+      verticalExaggeration: document.getElementById("exaggerate"),
       selfDestruct: document.getElementById("selfDestruct"),
       labelSwitch: document.getElementById("labelSwitch"),
       objectsList: document.getElementById("objectsList"),
@@ -120,13 +120,13 @@
     * Some UI to keep the users happy
     */
 
-   // We'll attach something to change vertical exageration now.
-   let verticalExagerate = new Explorer3d.VerticalExagerate(factory).onChange(function() {
-      Explorer3d.Logger.log("We have a trigger to vertical exagerate");
-      verticalExagerate.set(+dom.verticalExageration.value);
+   // We'll attach something to change vertical exaggeration now.
+   let verticalExaggerate = new Explorer3d.VerticalExaggerate(factory).onChange(function() {
+      Explorer3d.Logger.log("We have a trigger to vertical exaggerate");
+      verticalExaggerate.set(+dom.verticalExaggeration.value);
    });
-   dom.verticalExageration.addEventListener("change", function() {
-      verticalExagerate.set(+dom.verticalExageration.value);
+   dom.verticalExaggeration.addEventListener("change", function() {
+      verticalExaggerate.set(+dom.verticalExaggeration.value);
    });
 
    // Wire in the ability to turn labels on and off.
@@ -205,4 +205,97 @@
 			return false;
 		}
    }
+
+
+   let coordinates = [[
+                        [-122.48369693756104, 37.83381888486939],
+                        [-122.48348236083984, 37.83317489144141],
+                        [-122.48339653015138, 37.83270036637107],
+                        [-125.48339653015138, 38.83270036637107],
+                        [-122.48356819152832, 37.832056363179625],
+                        [-122.48404026031496, 37.83114119107971],
+                        [-122.48404026031496, 37.83049717427869],
+                        [-122.48348236083984, 37.829920943955045],
+                        [-122.48356819152832, 37.82954808664175],
+                        [-122.48507022857666, 37.82944639795659],
+                        [-122.48610019683838, 37.82880236636284],
+                        [-122.48695850372314, 37.82931081282506],
+                        [-122.48700141906738, 37.83080223556934],
+                        [-122.48751640319824, 37.83168351665737],
+                        [-122.48803138732912, 37.832158048267786],
+                        [-122.48888969421387, 37.83297152392784],
+                        [-122.48987674713133, 37.83263257682617],
+                        [-121.49043464660643, 36.832937629287755],
+                        [-122.49125003814696, 37.832429207817725],
+                        [-122.49163627624512, 37.832564787218985],
+                        [-122.49223709106445, 37.83337825839438],
+                        [-122.49378204345702, 37.83368330777276],
+                        [-122.48369693756104, 37.83381888486939],
+                        [-122.48348236083984, 37.83317489144141],
+                        [-122.48339653015138, 37.83270036637107],
+                        [-125.48339653015138, 38.83270036637107],
+                        [-122.48356819152832, 37.832056363179625],
+                        [-122.48404026031496, 37.83114119107971],
+                        [-122.48404026031496, 37.83049717427869],
+                        [-122.48348236083984, 37.829920943955045],
+                        [-122.48356819152832, 37.82954808664175],
+                        [-122.48507022857666, 37.82944639795659],
+                        [-122.48610019683838, 37.82880236636284],
+                        [-122.48695850372314, 37.82931081282506],
+                        [-122.48700141906738, 37.83080223556934],
+                        [-122.48751640319824, 37.83168351665737],
+                        [-122.48803138732912, 37.832158048267786],
+                        [-122.48888969421387, 37.83297152392784],
+                        [-122.48987674713133, 37.83263257682617],
+                        [-121.49043464660643, 36.832937629287755],
+                        [-122.49125003814696, 37.832429207817725],
+                        [-122.49163627624512, 37.832564787218985],
+                        [122.49223709106445, -37.83337825839438],
+                        [-122.49378204345702, 37.83368330777276]
+   ]];
+
+   let now = Date.now();
+   let result;
+   for(let i = 0; i < 200000; i++) {
+      result = boundingBoxAroundPolyCoords(coordinates);
+   }
+   console.log("Bad = " + (Date.now() - now));
+   console.log(result);
+
+   now = Date.now();
+   for(let i = 0; i < 200000; i++) {
+      result = calcExtent(coordinates[0]);
+   }
+   console.log("Good = " + (Date.now() - now));
+   console.log(result);
+
+
+
+   function boundingBoxAroundPolyCoords (coords) {
+    var xAll = [], yAll = []
+
+    for (var i = 0; i < coords[0].length; i++) {
+      xAll.push(coords[0][i][1])
+      yAll.push(coords[0][i][0])
+    }
+
+    xAll = xAll.sort()
+    yAll = yAll.sort(function (a,b) { return a - b })
+
+    return [ [xAll[0], yAll[0]], [xAll[xAll.length - 1], yAll[yAll.length - 1]] ]
+  }
+
+
+   function calcExtent(coords) {
+      let lngMax = latMax = -Infinity;
+      let lngMin = latMin = Infinity;
+      coords[0].forEach(point => {
+         lngMin = Math.min(point[0], lngMin);
+         lngMax = Math.max(point[0], lngMax);
+         latMin = Math.min(point[1], latMin);
+         latMax = Math.max(point[1], latMax);
+      });
+      return [[lngMin, latMin], [lngMax, latMax]];
+   }
+
 })(window, Explorer3d)

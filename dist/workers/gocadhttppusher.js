@@ -1,11 +1,9 @@
-importScripts('../resources/proj4.js');
-
 (function (context) {
 
    if(!context["Promise"]) {
       importScripts('../resources/es6-promise.js');
    }
-   importScripts('../resources/polyfills.js',
+   importScripts('../resources/proj4.js',
               '../libs.js');
 
    var eventList = [
@@ -51,6 +49,7 @@ importScripts('../resources/proj4.js');
       Explorer3d.Logger.level = e.data.options.logLevel;
       var self = this;
       var t = Date.now();
+      var data = e.data
       var pusher = new Explorer3d.DocumentPusher(e.data.options, proj4);
 
 
@@ -59,7 +58,7 @@ importScripts('../resources/proj4.js');
          pusher.addEventListener(entry.name, entry.handler);
       });
 
-      new Explorer3d.HttpPusher("sample.ts", e.data.options, function(line) {
+      new Explorer3d.HttpPusher(data.url, function(line) {
            pusher.push(line);
       }).start().then(function() {
          Explorer3d.Logger.log("******************* Http Kaput ****************************");

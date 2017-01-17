@@ -1,0 +1,148 @@
+body {
+   margin: 0;
+   overflow: hidden;
+}
+
+#toolbar {
+   padding:5px;
+   height: 20px;
+   background-color: lightgray;
+}
+
+#fileDrop {
+   position: absolute;
+   top: 35px;
+   left: 5px;
+   height: 106px;
+   width: 220px;
+   z-index: 1;
+   background-color: #eeeeee;
+   text-align: center;
+   border: 1px dashed gray;
+   padding:15px;
+   padding-left:5px;
+   padding-right:5px;
+}
+
+#target {
+   position: absolute;
+   z-index: 0;
+   min-height: 300px;
+   top: 30px;
+   bottom: 0;
+   left:0;
+   right: 0;
+}
+
+#helpPanel {
+   padding: 5px;
+   z-index: 2;
+   position: fixed;
+   height: 18px;
+   width: 20px;
+   left: 5px;
+   bottom: 3px;
+   -webkit-transition: height 1s; /* Safari */
+   transition: height 1s;
+}
+
+#helpPanel.open {
+   height: 270px;
+   width: 300px;
+   background-color: #e8e8e8;
+   border: 1px solid gray;
+}
+
+.showButton, .hideButton {
+   float: right;
+}
+
+#helpPanel.open .showButton {
+   display: none;
+}
+
+#helpPanel:not(.open) .hideButton {
+   display:none;
+}
+
+#helpPanel.open span, #helpPanel:not(.open) div {
+   opacity: 1;
+   font-size: 16px;
+}
+#helpPanel:not(.open) span, #helpPanel:not(.open) div {
+   opacity: 0;
+   font-size: 0;
+}
+
+#objectsList.active {
+    width: 300px;
+    top: 32px;
+    position: fixed;
+    right: 0px;
+    bottom: 0px;
+    overflow-y: auto;
+}
+
+#mask {
+   display:none;
+   position: fixed;
+   top:0;
+   height: 100%;
+   width: 100%;
+   opacity: 0.7;
+   background-color: #d0d0d0;
+   z-index: 888;
+}
+
+.disable #mask {
+   display: block;
+}
+
+#noWebGl {
+   display: none;
+}
+
+.disable #noWebGl {
+   display: block;
+   position: fixed;
+   top: 30px;
+   left: 100px;
+   right: 100px;
+   margin: 100px;
+   height: 200px;
+   text-align: center;
+   background-color: #efefef;
+   border-radius: 10px;
+   border: solid 1px gray;
+   box-shadow: 10px 6px lightgray;
+   padding-top: 120px;
+   z-index: 999;
+}
+
+.layer {
+   clear: both;
+   margin:0;
+   display: block;
+   white-space: nowrap;
+   width: 280px;
+   overflow: hidden;
+   color: black;
+   font-weight: bold;
+   text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+   -webkit-font-smoothing: antialiased;
+   padding-top: 3px;
+   padding-bottom: 3px;
+}
+
+.layerspan {
+   float: left;
+   white-space: nowrap;
+   width: 240px;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+.crossButton {
+   opacity: 0.7;
+   float: right;
+}

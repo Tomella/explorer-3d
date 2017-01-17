@@ -22,16 +22,7 @@ if (typeof Object.assign != 'function') {
     return to;
   };
 }
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
-
+/** For some reason the typescript transpiler is leaving this out so here it is as a hack. */
 var __generator = (this && this.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
     return { next: verb(0), "throw": verb(1), "return": verb(2) };
@@ -1400,8 +1391,9 @@ var DocumentPusher = (function (_super) {
             Logger.log("DP: " + event.type);
             _this.dispatchEvent(event);
         };
-        _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
-        if (options && options.from && options.to && options.from !== options.to) {
+        // They can pick a projection but if the app hasn't loaded the proj4 library we don't do anything as well
+        if (options && options.from && options.to && options.from !== options.to && proj4) {
+            proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
             _this.projectionFn = function reproject(from, to) {
                 return function (coords) {
                     return proj4(from, to, [coords[0], coords[1]]);
@@ -1471,6 +1463,50 @@ var LinesToLinePusher = (function () {
         });
     };
     return LinesToLinePusher;
+}());
+
+var HttpPusher = (function () {
+    function HttpPusher(url, callback) {
+        this.url = url;
+        this.callback = callback;
+    }
+    HttpPusher.prototype.start = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var self = _this;
+            var get = new XMLHttpRequest();
+            var index = 0;
+            var pageNo = 0;
+            var lineBuffer = [];
+            var handleData = function () {
+                if (get.readyState !== null && (get.readyState < 4 || get.status !== 200)) {
+                    return;
+                }
+                var totalLength = get.responseText.length;
+                for (var i = index; i < totalLength; i++) {
+                    var char = get.responseText[i];
+                    if (char === "\r") {
+                        continue;
+                    }
+                    if (char === "\n") {
+                        self.callback(lineBuffer.join(""));
+                        lineBuffer = [];
+                        continue;
+                    }
+                    lineBuffer.push(char);
+                }
+                index = totalLength;
+                Logger.log("Handling data: " + ++pageNo + ", size: " + get.responseText.length + ", state: " + get.readyState);
+                if (get.readyState === 4) {
+                    resolve(null);
+                }
+            };
+            get.onreadystatechange = handleData;
+            get.open("get", _this.url);
+            get.send();
+        });
+    };
+    return HttpPusher;
 }());
 
 var LinesPagedPusher = (function () {
@@ -1612,6 +1648,7 @@ var LinesPagedPusher = (function () {
 
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
+exports.HttpPusher = HttpPusher;
 exports.LinesPagedPusher = LinesPagedPusher;
 exports.Logger = Logger;
 

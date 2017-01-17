@@ -1,3 +1,1207 @@
+// WARNING: Don't edit.
+// This file contains all the content from the dependencies directory. It's rolled up into the explorer3d.js file.
+
+/**
+ * @author James Baicoianu / http://www.baicoianu.com/
+ */
+
+THREE.FlyControls = function ( object, domElement ) {
+
+   this.object = object;
+
+   this.domElement = ( domElement !== undefined ) ? domElement : document;
+   if ( domElement ) this.domElement.setAttribute( 'tabindex', - 1 );
+
+   // API
+
+   this.movementSpeed = 1.0;
+   this.rollSpeed = 0.005;
+
+   this.dragToLook = false;
+   this.autoForward = false;
+
+   // disable default target object behavior
+
+   // internals
+
+   this.tmpQuaternion = new THREE.Quaternion();
+
+   this.mouseStatus = 0;
+
+   this.moveState = { up: 0, down: 0, left: 0, right: 0, forward: 0, back: 0, pitchUp: 0, pitchDown: 0, yawLeft: 0, yawRight: 0, rollLeft: 0, rollRight: 0 };
+   this.moveVector = new THREE.Vector3( 0, 0, 0 );
+   this.rotationVector = new THREE.Vector3( 0, 0, 0 );
+
+   this.handleEvent = function ( event ) {
+
+      if ( typeof this[ event.type ] == 'function' ) {
+
+         this[ event.type ]( event );
+
+      }
+
+   };
+
+   this.keydown = function( event ) {
+
+      if ( event.altKey ) {
+
+         return;
+
+      }
+
+      //event.preventDefault();
+
+      switch ( event.keyCode ) {
+
+         case 16: /* shift */ this.movementSpeedMultiplier = .1; break;
+
+         case 87: /*W*/ this.moveState.forward = 1; break;
+         case 83: /*S*/ this.moveState.back = 1; break;
+
+         case 65: /*A*/ this.moveState.left = 1; break;
+         case 68: /*D*/ this.moveState.right = 1; break;
+
+         case 82: /*R*/ this.moveState.up = 1; break;
+         case 70: /*F*/ this.moveState.down = 1; break;
+
+         case 38: /*up*/ this.moveState.pitchUp = 1; break;
+         case 40: /*down*/ this.moveState.pitchDown = 1; break;
+
+         case 37: /*left*/ this.moveState.yawLeft = 1; break;
+         case 39: /*right*/ this.moveState.yawRight = 1; break;
+
+         case 81: /*Q*/ this.moveState.rollLeft = 1; break;
+         case 69: /*E*/ this.moveState.rollRight = 1; break;
+
+      }
+
+      this.updateMovementVector();
+      this.updateRotationVector();
+
+   };
+
+   this.keyup = function( event ) {
+
+      switch ( event.keyCode ) {
+
+         case 16: /* shift */ this.movementSpeedMultiplier = 1; break;
+
+         case 87: /*W*/ this.moveState.forward = 0; break;
+         case 83: /*S*/ this.moveState.back = 0; break;
+
+         case 65: /*A*/ this.moveState.left = 0; break;
+         case 68: /*D*/ this.moveState.right = 0; break;
+
+         case 82: /*R*/ this.moveState.up = 0; break;
+         case 70: /*F*/ this.moveState.down = 0; break;
+
+         case 38: /*up*/ this.moveState.pitchUp = 0; break;
+         case 40: /*down*/ this.moveState.pitchDown = 0; break;
+
+         case 37: /*left*/ this.moveState.yawLeft = 0; break;
+         case 39: /*right*/ this.moveState.yawRight = 0; break;
+
+         case 81: /*Q*/ this.moveState.rollLeft = 0; break;
+         case 69: /*E*/ this.moveState.rollRight = 0; break;
+
+      }
+
+      this.updateMovementVector();
+      this.updateRotationVector();
+
+   };
+
+   this.mousedown = function( event ) {
+
+      if ( this.domElement !== document ) {
+
+         this.domElement.focus();
+
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if ( this.dragToLook ) {
+
+         this.mouseStatus ++;
+
+      } else {
+
+         switch ( event.button ) {
+
+            case 0: this.moveState.forward = 1; break;
+            case 2: this.moveState.back = 1; break;
+
+         }
+
+         this.updateMovementVector();
+
+      }
+
+   };
+
+   this.mousemove = function( event ) {
+
+      if ( ! this.dragToLook || this.mouseStatus > 0 ) {
+
+         var container = this.getContainerDimensions();
+         var halfWidth  = container.size[ 0 ] / 2;
+         var halfHeight = container.size[ 1 ] / 2;
+
+         this.moveState.yawLeft   = - ( ( event.pageX - container.offset[ 0 ] ) - halfWidth  ) / halfWidth;
+         this.moveState.pitchDown =   ( ( event.pageY - container.offset[ 1 ] ) - halfHeight ) / halfHeight;
+
+         this.updateRotationVector();
+
+      }
+
+   };
+
+   this.mouseup = function( event ) {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if ( this.dragToLook ) {
+
+         this.mouseStatus --;
+
+         this.moveState.yawLeft = this.moveState.pitchDown = 0;
+
+      } else {
+
+         switch ( event.button ) {
+
+            case 0: this.moveState.forward = 0; break;
+            case 2: this.moveState.back = 0; break;
+
+         }
+
+         this.updateMovementVector();
+
+      }
+
+      this.updateRotationVector();
+
+   };
+
+   this.update = function( delta ) {
+
+      var moveMult = delta * this.movementSpeed;
+      var rotMult = delta * this.rollSpeed;
+
+      this.object.translateX( this.moveVector.x * moveMult );
+      this.object.translateY( this.moveVector.y * moveMult );
+      this.object.translateZ( this.moveVector.z * moveMult );
+
+      this.tmpQuaternion.set( this.rotationVector.x * rotMult, this.rotationVector.y * rotMult, this.rotationVector.z * rotMult, 1 ).normalize();
+      this.object.quaternion.multiply( this.tmpQuaternion );
+
+      // expose the rotation vector for convenience
+      this.object.rotation.setFromQuaternion( this.object.quaternion, this.object.rotation.order );
+
+
+   };
+
+   this.updateMovementVector = function() {
+
+      var forward = ( this.moveState.forward || ( this.autoForward && ! this.moveState.back ) ) ? 1 : 0;
+
+      this.moveVector.x = ( - this.moveState.left    + this.moveState.right );
+      this.moveVector.y = ( - this.moveState.down    + this.moveState.up );
+      this.moveVector.z = ( - forward + this.moveState.back );
+
+      //console.log( 'move:', [ this.moveVector.x, this.moveVector.y, this.moveVector.z ] );
+
+   };
+
+   this.updateRotationVector = function() {
+
+      this.rotationVector.x = ( - this.moveState.pitchDown + this.moveState.pitchUp );
+      this.rotationVector.y = ( - this.moveState.yawRight  + this.moveState.yawLeft );
+      this.rotationVector.z = ( - this.moveState.rollRight + this.moveState.rollLeft );
+
+      //console.log( 'rotate:', [ this.rotationVector.x, this.rotationVector.y, this.rotationVector.z ] );
+
+   };
+
+   this.getContainerDimensions = function() {
+
+      if ( this.domElement != document ) {
+
+         return {
+            size   : [ this.domElement.offsetWidth, this.domElement.offsetHeight ],
+            offset   : [ this.domElement.offsetLeft,  this.domElement.offsetTop ]
+         };
+
+      } else {
+
+         return {
+            size   : [ window.innerWidth, window.innerHeight ],
+            offset   : [ 0, 0 ]
+         };
+
+      }
+
+   };
+
+   function bind( scope, fn ) {
+
+      return function () {
+
+         fn.apply( scope, arguments );
+
+      };
+
+   }
+
+   function contextmenu( event ) {
+
+      event.preventDefault();
+
+   }
+
+   this.dispose = function() {
+
+      this.domElement.removeEventListener( 'contextmenu', contextmenu, false );
+      this.domElement.removeEventListener( 'mousedown', _mousedown, false );
+      this.domElement.removeEventListener( 'mousemove', _mousemove, false );
+      this.domElement.removeEventListener( 'mouseup', _mouseup, false );
+
+      window.removeEventListener( 'keydown', _keydown, false );
+      window.removeEventListener( 'keyup', _keyup, false );
+
+   }
+
+   var _mousemove = bind( this, this.mousemove );
+   var _mousedown = bind( this, this.mousedown );
+   var _mouseup = bind( this, this.mouseup );
+   var _keydown = bind( this, this.keydown );
+   var _keyup = bind( this, this.keyup );
+
+   this.domElement.addEventListener( 'contextmenu', contextmenu, false );
+
+   this.domElement.addEventListener( 'mousemove', _mousemove, false );
+   this.domElement.addEventListener( 'mousedown', _mousedown, false );
+   this.domElement.addEventListener( 'mouseup',   _mouseup, false );
+
+   window.addEventListener( 'keydown', _keydown, false );
+   window.addEventListener( 'keyup',   _keyup, false );
+
+   this.updateMovementVector();
+   this.updateRotationVector();
+
+};
+
+/**
+ * @author daron1337 / http://daron1337.github.io/
+ */
+
+THREE.Lut = function ( colormap, numberofcolors ) {
+
+   this.lut = [];
+   this.map = THREE.ColorMapKeywords[ colormap ];
+   this.n = numberofcolors;
+   this.mapname = colormap;
+
+   var step = 1.0 / this.n;
+
+   for ( var i = 0; i <= 1; i += step ) {
+
+      for ( var j = 0; j < this.map.length - 1; j ++ ) {
+
+         if ( i >= this.map[ j ][ 0 ] && i < this.map[ j + 1 ][ 0 ] ) {
+
+            var min = this.map[ j ][ 0 ];
+            var max = this.map[ j + 1 ][ 0 ];
+
+            var color = new THREE.Color( 0xffffff );
+            var minColor = new THREE.Color( 0xffffff ).setHex( this.map[ j ][ 1 ] );
+            var maxColor = new THREE.Color( 0xffffff ).setHex( this.map[ j + 1 ][ 1 ] );
+
+            color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
+
+            this.lut.push( color );
+
+         }
+
+      }
+
+   }
+
+   return this.set( this );
+
+};
+
+THREE.Lut.prototype = {
+
+   constructor: THREE.Lut,
+
+   lut: [], map: [], mapname: 'rainbow', n: 256, minV: 0, maxV: 1, legend: null,
+
+   set: function ( value ) {
+
+      if ( value instanceof THREE.Lut ) {
+
+         this.copy( value );
+
+      }
+
+      return this;
+
+   },
+
+   setMin: function ( min ) {
+
+      this.minV = min;
+
+      return this;
+
+   },
+
+   setMax: function ( max ) {
+
+      this.maxV = max;
+
+      return this;
+
+   },
+
+   changeNumberOfColors: function ( numberofcolors ) {
+
+      this.n = numberofcolors;
+
+      return new THREE.Lut( this.mapname, this.n );
+
+   },
+
+   changeColorMap: function ( colormap ) {
+
+      this.mapname = colormap;
+
+      return new THREE.Lut( this.mapname, this.n );
+
+   },
+
+   copy: function ( lut ) {
+
+      this.lut = lut.lut;
+      this.mapname = lut.mapname;
+      this.map = lut.map;
+      this.n = lut.n;
+      this.minV = lut.minV;
+      this.maxV = lut.maxV;
+
+      return this;
+
+   },
+
+   getColor: function ( alpha ) {
+
+      if ( alpha <= this.minV ) {
+
+         alpha = this.minV;
+
+      } else if ( alpha >= this.maxV ) {
+
+         alpha = this.maxV;
+
+      }
+
+      alpha = ( alpha - this.minV ) / ( this.maxV - this.minV );
+
+      var colorPosition = Math.round ( alpha * this.n );
+      colorPosition == this.n ? colorPosition -= 1 : colorPosition;
+
+      return this.lut[ colorPosition ];
+
+   },
+
+   addColorMap: function ( colormapName, arrayOfColors ) {
+
+      THREE.ColorMapKeywords[ colormapName ] = arrayOfColors;
+
+   },
+
+   setLegendOn: function ( parameters ) {
+
+      if ( parameters === undefined ) {
+
+         parameters = {};
+
+      }
+
+      this.legend = {};
+
+      this.legend.layout = parameters.hasOwnProperty( 'layout' ) ? parameters[ 'layout' ] : 'vertical';
+
+      this.legend.position = parameters.hasOwnProperty( 'position' ) ? parameters[ 'position' ] : { 'x': 21.5, 'y': 8, 'z': 5 };
+
+      this.legend.dimensions = parameters.hasOwnProperty( 'dimensions' ) ? parameters[ 'dimensions' ] : { 'width': 0.5, 'height': 3 };
+
+      this.legend.canvas = document.createElement( 'canvas' );
+
+      this.legend.canvas.setAttribute( 'id', 'legend' );
+      this.legend.canvas.setAttribute( 'hidden', true );
+
+      document.body.appendChild( this.legend.canvas );
+
+      this.legend.ctx = this.legend.canvas.getContext( '2d' );
+
+      this.legend.canvas.setAttribute( 'width',  1 );
+      this.legend.canvas.setAttribute( 'height', this.n );
+
+      this.legend.texture = new THREE.Texture( this.legend.canvas );
+
+      imageData = this.legend.ctx.getImageData( 0, 0, 1, this.n );
+
+      data = imageData.data;
+      len = data.length;
+
+      this.map = THREE.ColorMapKeywords[ this.mapname ];
+
+      var k = 0;
+
+      var step = 1.0 / this.n;
+
+      for ( var i = 1; i >= 0; i -= step ) {
+
+         for ( var j = this.map.length - 1; j >= 0; j -- ) {
+
+            if ( i < this.map[ j ][ 0 ] && i >= this.map[ j - 1 ][ 0 ]  ) {
+
+               var min = this.map[ j - 1 ][ 0 ];
+               var max = this.map[ j ][ 0 ];
+               var color = new THREE.Color( 0xffffff );
+               var minColor = new THREE.Color( 0xffffff ).setHex( this.map[ j - 1 ][ 1 ] );
+               var maxColor = new THREE.Color( 0xffffff ).setHex( this.map[ j ][ 1 ] );
+               color = minColor.lerp( maxColor, ( i - min ) / ( max - min ) );
+
+               data[ k * 4 ] = Math.round( color.r * 255 );
+               data[ k * 4 + 1 ] = Math.round( color.g * 255 );
+               data[ k * 4 + 2 ] = Math.round( color.b * 255 );
+               data[ k * 4 + 3 ] = 255;
+
+               k += 1;
+
+            }
+
+         }
+
+      }
+
+      this.legend.ctx.putImageData( imageData, 0, 0 );
+      this.legend.texture.needsUpdate = true;
+
+      this.legend.legendGeometry = new THREE.PlaneBufferGeometry( this.legend.dimensions.width, this.legend.dimensions.height );
+      this.legend.legendMaterial = new THREE.MeshBasicMaterial( { map : this.legend.texture, side : THREE.DoubleSide } );
+
+      this.legend.mesh = new THREE.Mesh( this.legend.legendGeometry, this.legend.legendMaterial );
+
+      if ( this.legend.layout == 'horizontal' ) {
+
+         this.legend.mesh.rotation.z = - 90 * ( Math.PI / 180 );
+
+      }
+
+      this.legend.mesh.position.copy( this.legend.position );
+
+      return this.legend.mesh;
+
+   },
+
+   setLegendOff: function () {
+
+      this.legend = null;
+
+      return this.legend;
+
+   },
+
+   setLegendLayout: function ( layout ) {
+
+      if ( ! this.legend ) {
+
+         return false;
+
+      }
+
+      if ( this.legend.layout == layout ) {
+
+         return false;
+
+      }
+
+      if ( layout != 'horizontal' && layout != 'vertical' ) {
+
+         return false;
+
+      }
+
+      this.layout = layout;
+
+      if ( layout == 'horizontal' ) {
+
+         this.legend.mesh.rotation.z = 90 * ( Math.PI / 180 );
+
+      }
+
+      if ( layout == 'vertical' ) {
+
+         this.legend.mesh.rotation.z = - 90 * ( Math.PI / 180 );
+
+      }
+
+      return this.legend.mesh;
+
+   },
+
+   setLegendPosition: function ( position ) {
+
+      this.legend.position = new THREE.Vector3( position.x, position.y, position.z );
+
+      return this.legend;
+
+   },
+
+   setLegendLabels: function ( parameters, callback ) {
+
+      if ( ! this.legend ) {
+
+         return false;
+
+      }
+
+      if ( typeof parameters === 'function' ) {
+
+         callback = parameters;
+
+      }
+
+      if ( parameters === undefined ) {
+
+         parameters = {};
+
+      }
+
+      this.legend.labels = {};
+
+      this.legend.labels.fontsize = parameters.hasOwnProperty( 'fontsize' ) ? parameters[ 'fontsize' ] : 24;
+
+      this.legend.labels.fontface = parameters.hasOwnProperty( 'fontface' ) ? parameters[ 'fontface' ] : 'Arial';
+
+      this.legend.labels.title = parameters.hasOwnProperty( 'title' ) ? parameters[ 'title' ] : '';
+
+      this.legend.labels.um = parameters.hasOwnProperty( 'um' ) ? ' [ ' + parameters[ 'um' ] + ' ]' : '';
+
+      this.legend.labels.ticks = parameters.hasOwnProperty( 'ticks' ) ? parameters[ 'ticks' ] : 0;
+
+      this.legend.labels.decimal = parameters.hasOwnProperty( 'decimal' ) ? parameters[ 'decimal' ] : 2;
+
+      this.legend.labels.notation = parameters.hasOwnProperty( 'notation' ) ? parameters[ 'notation' ] : 'standard';
+
+      var backgroundColor = { r: 255, g: 100, b: 100, a: 0.8 };
+      var borderColor =  { r: 255, g: 0, b: 0, a: 1.0 };
+      var borderThickness = 4;
+
+      var canvasTitle = document.createElement( 'canvas' );
+      var contextTitle = canvasTitle.getContext( '2d' );
+
+      contextTitle.font = 'Normal ' + this.legend.labels.fontsize * 1.2 + 'px ' + this.legend.labels.fontface;
+
+      var metrics = contextTitle.measureText( this.legend.labels.title.toString() + this.legend.labels.um.toString() );
+      var textWidth = metrics.width;
+
+      contextTitle.fillStyle   = 'rgba(' + backgroundColor.r + ',' + backgroundColor.g + ',' + backgroundColor.b + ',' + backgroundColor.a + ')';
+
+      contextTitle.strokeStyle = 'rgba(' + borderColor.r + ',' + borderColor.g + ',' + borderColor.b + ',' + borderColor.a + ')';
+
+      contextTitle.lineWidth = borderThickness;
+
+      contextTitle.fillStyle = 'rgba( 0, 0, 0, 1.0 )';
+
+      contextTitle.fillText( this.legend.labels.title.toString() + this.legend.labels.um.toString(), borderThickness, this.legend.labels.fontsize + borderThickness );
+
+      var txtTitle = new THREE.CanvasTexture( canvasTitle );
+      txtTitle.minFilter = THREE.LinearFilter;
+
+      var spriteMaterialTitle = new THREE.SpriteMaterial( { map: txtTitle } );
+
+      var spriteTitle = new THREE.Sprite( spriteMaterialTitle );
+
+      spriteTitle.scale.set( 2, 1, 1.0 );
+
+      if ( this.legend.layout == 'vertical' ) {
+
+         spriteTitle.position.set( this.legend.position.x + this.legend.dimensions.width, this.legend.position.y + ( this.legend.dimensions.height * 0.45 ), this.legend.position.z );
+
+      }
+
+      if ( this.legend.layout == 'horizontal' ) {
+
+         spriteTitle.position.set( this.legend.position.x * 1.015, this.legend.position.y + ( this.legend.dimensions.height * 0.03 ), this.legend.position.z );
+
+      }
+
+      if ( this.legend.labels.ticks > 0 ) {
+
+         var ticks = {};
+         var lines = {};
+
+         if ( this.legend.layout == 'vertical' ) {
+
+            var topPositionY = this.legend.position.y + ( this.legend.dimensions.height * 0.36 );
+            var bottomPositionY = this.legend.position.y - ( this.legend.dimensions.height * 0.61 );
+
+         }
+
+         if ( this.legend.layout == 'horizontal' ) {
+
+            var topPositionX = this.legend.position.x + ( this.legend.dimensions.height * 0.75 );
+            var bottomPositionX = this.legend.position.x - ( this.legend.dimensions.width * 1.2  ) ;
+
+         }
+
+         for ( var i = 0; i < this.legend.labels.ticks; i ++ ) {
+
+            var value = ( this.maxV - this.minV ) / ( this.legend.labels.ticks - 1  ) * i + this.minV;
+
+            if ( callback ) {
+
+               value = callback ( value );
+
+            } else {
+
+               if ( this.legend.labels.notation == 'scientific' ) {
+
+                  value = value.toExponential( this.legend.labels.decimal );
+
+               } else {
+
+                  value = value.toFixed( this.legend.labels.decimal );
+
+               }
+
+            }
+
+            var canvasTick = document.createElement( 'canvas' );
+            var contextTick = canvasTick.getContext( '2d' );
+
+            contextTick.font = 'Normal ' + this.legend.labels.fontsize + 'px ' + this.legend.labels.fontface;
+
+            var metrics = contextTick.measureText( value.toString() );
+            var textWidth = metrics.width;
+
+            contextTick.fillStyle   = 'rgba(' + backgroundColor.r + ',' + backgroundColor.g + ',' + backgroundColor.b + ',' + backgroundColor.a + ')';
+
+            contextTick.strokeStyle = 'rgba(' + borderColor.r + ',' + borderColor.g + ',' + borderColor.b + ',' + borderColor.a + ')';
+
+            contextTick.lineWidth = borderThickness;
+
+            contextTick.fillStyle = 'rgba( 0, 0, 0, 1.0 )';
+
+            contextTick.fillText( value.toString(), borderThickness, this.legend.labels.fontsize + borderThickness );
+
+            var txtTick = new THREE.CanvasTexture( canvasTick );
+            txtTick.minFilter = THREE.LinearFilter;
+
+            var spriteMaterialTick = new THREE.SpriteMaterial( { map: txtTick } );
+
+            var spriteTick = new THREE.Sprite( spriteMaterialTick );
+
+            spriteTick.scale.set( 2, 1, 1.0 );
+
+            if ( this.legend.layout == 'vertical' ) {
+
+               var position = bottomPositionY + ( topPositionY - bottomPositionY ) * ( ( value - this.minV ) / ( this.maxV - this.minV ) );
+
+               spriteTick.position.set( this.legend.position.x + ( this.legend.dimensions.width * 2.7 ), position, this.legend.position.z );
+
+            }
+
+            if ( this.legend.layout == 'horizontal' ) {
+
+               var position = bottomPositionX + ( topPositionX - bottomPositionX ) * ( ( value - this.minV ) / ( this.maxV - this.minV ) );
+
+               if ( this.legend.labels.ticks > 5 ) {
+
+                  if ( i % 2 === 0 ) {
+
+                     var offset = 1.7;
+
+                  } else {
+
+                     var offset = 2.1;
+
+                  }
+
+               } else {
+
+                  var offset = 1.7;
+
+               }
+
+               spriteTick.position.set( position, this.legend.position.y - this.legend.dimensions.width * offset, this.legend.position.z );
+
+            }
+
+            var material = new THREE.LineBasicMaterial( { color: 0x000000, linewidth: 2 } );
+
+            var geometry = new THREE.Geometry();
+
+
+            if ( this.legend.layout == 'vertical' ) {
+
+               var linePosition = ( this.legend.position.y - ( this.legend.dimensions.height * 0.5 ) + 0.01 ) + ( this.legend.dimensions.height ) * ( ( value - this.minV ) / ( this.maxV - this.minV ) * 0.99 );
+
+               geometry.vertices.push( new THREE.Vector3( this.legend.position.x + this.legend.dimensions.width * 0.55, linePosition, this.legend.position.z  ) );
+
+               geometry.vertices.push( new THREE.Vector3( this.legend.position.x + this.legend.dimensions.width * 0.7, linePosition, this.legend.position.z  ) );
+
+            }
+
+            if ( this.legend.layout == 'horizontal' ) {
+
+               var linePosition = ( this.legend.position.x - ( this.legend.dimensions.height * 0.5 ) + 0.01 ) + ( this.legend.dimensions.height ) * ( ( value - this.minV ) / ( this.maxV - this.minV ) * 0.99 );
+
+               geometry.vertices.push( new THREE.Vector3( linePosition, this.legend.position.y - this.legend.dimensions.width * 0.55, this.legend.position.z  ) );
+
+               geometry.vertices.push( new THREE.Vector3( linePosition, this.legend.position.y - this.legend.dimensions.width * 0.7, this.legend.position.z  ) );
+
+            }
+
+            var line = new THREE.Line( geometry, material );
+
+            lines[ i ] = line;
+            ticks[ i ] = spriteTick;
+
+         }
+
+      }
+
+      return { 'title': spriteTitle,  'ticks': ticks, 'lines': lines };
+
+   }
+
+};
+
+
+THREE.ColorMapKeywords = {
+
+   "rainbow":    [ [ 0.0, '0x0000FF' ], [ 0.2, '0x00FFFF' ], [ 0.5, '0x00FF00' ], [ 0.8, '0xFFFF00' ],  [ 1.0, '0xFF0000' ] ],
+   "cooltowarm": [ [ 0.0, '0x3C4EC2' ], [ 0.2, '0x9BBCFF' ], [ 0.5, '0xDCDCDC' ], [ 0.8, '0xF6A385' ],  [ 1.0, '0xB40426' ] ],
+   "blackbody" : [ [ 0.0, '0x000000' ], [ 0.2, '0x780000' ], [ 0.5, '0xE63200' ], [ 0.8, '0xFFFF00' ],  [ 1.0, '0xFFFFFF' ] ],
+   "grayscale" : [ [ 0.0, '0x000000' ], [ 0.2, '0x404040' ], [ 0.5, '0x7F7F80' ], [ 0.8, '0xBFBFBF' ],  [ 1.0, '0xFFFFFF' ] ]
+
+};
+/**
+ * @author qiao / https://github.com/qiao
+ * @author mrdoob / http://mrdoob.com
+ * @author alteredq / http://alteredqualia.com/
+ * @author WestLangley / http://github.com/WestLangley
+ */
+
+THREE.OrbitControls = function ( object, domElement ) {
+
+   this.object = object;
+   this.domElement = ( domElement !== undefined ) ? domElement : document;
+
+   // API
+
+   this.enabled = true;
+
+   this.center = new THREE.Vector3();
+
+   this.userZoom = true;
+   this.userZoomSpeed = 1.0;
+
+   this.userRotate = true;
+   this.userRotateSpeed = 1.0;
+
+   this.userPan = true;
+   this.userPanSpeed = 2.0;
+
+   this.autoRotate = false;
+   this.autoRotateSpeed = 2.0; // 30 seconds per round when fps is 60
+
+   this.minPolarAngle = 0; // radians
+   this.maxPolarAngle = Math.PI; // radians
+
+   this.minDistance = 0;
+   this.maxDistance = Infinity;
+
+   // 65 /*A*/, 83 /*S*/, 68 /*D*/
+   this.keys = { LEFT: 37, UP: 38, RIGHT: 39, BOTTOM: 40, ROTATE: 65, ZOOM: 83, PAN: 68 };
+
+   // internals
+
+   var scope = this;
+
+   var EPS = 0.000001;
+   var PIXELS_PER_ROUND = 1800;
+
+   var rotateStart = new THREE.Vector2();
+   var rotateEnd = new THREE.Vector2();
+   var rotateDelta = new THREE.Vector2();
+
+   var zoomStart = new THREE.Vector2();
+   var zoomEnd = new THREE.Vector2();
+   var zoomDelta = new THREE.Vector2();
+
+   var phiDelta = 0;
+   var thetaDelta = 0;
+   var scale = 1;
+
+   var lastPosition = new THREE.Vector3();
+
+   var STATE = { NONE: -1, ROTATE: 0, ZOOM: 1, PAN: 2 };
+   var state = STATE.NONE;
+
+   // events
+
+   var changeEvent = { type: 'change' };
+
+
+   this.rotateLeft = function ( angle ) {
+
+      if ( angle === undefined ) {
+
+         angle = getAutoRotationAngle();
+
+      }
+
+      thetaDelta -= angle;
+
+   };
+
+   this.rotateRight = function ( angle ) {
+
+      if ( angle === undefined ) {
+
+         angle = getAutoRotationAngle();
+
+      }
+
+      thetaDelta += angle;
+
+   };
+
+   this.rotateUp = function ( angle ) {
+
+      if ( angle === undefined ) {
+
+         angle = getAutoRotationAngle();
+
+      }
+
+      phiDelta -= angle;
+
+   };
+
+   this.rotateDown = function ( angle ) {
+
+      if ( angle === undefined ) {
+
+         angle = getAutoRotationAngle();
+
+      }
+
+      phiDelta += angle;
+
+   };
+
+   this.zoomIn = function ( zoomScale ) {
+
+      if ( zoomScale === undefined ) {
+
+         zoomScale = getZoomScale();
+
+      }
+
+      scale /= zoomScale;
+
+   };
+
+   this.zoomOut = function ( zoomScale ) {
+
+      if ( zoomScale === undefined ) {
+
+         zoomScale = getZoomScale();
+
+      }
+
+      scale *= zoomScale;
+
+   };
+
+   this.pan = function ( distance ) {
+
+      distance.transformDirection( this.object.matrix );
+      distance.multiplyScalar( scope.userPanSpeed );
+
+      this.object.position.add( distance );
+      this.center.add( distance );
+
+   };
+
+   this.update = function () {
+
+      var position = this.object.position;
+      var offset = position.clone().sub( this.center );
+
+      // angle from z-axis around y-axis
+
+      var theta = Math.atan2( offset.x, offset.z );
+
+      // angle from y-axis
+
+      var phi = Math.atan2( Math.sqrt( offset.x * offset.x + offset.z * offset.z ), offset.y );
+
+      if ( this.autoRotate ) {
+
+         this.rotateLeft( getAutoRotationAngle() );
+
+      }
+
+      theta += thetaDelta;
+      phi += phiDelta;
+
+      // restrict phi to be between desired limits
+      phi = Math.max( this.minPolarAngle, Math.min( this.maxPolarAngle, phi ) );
+
+      // restrict phi to be betwee EPS and PI-EPS
+      phi = Math.max( EPS, Math.min( Math.PI - EPS, phi ) );
+
+      var radius = offset.length() * scale;
+
+      // restrict radius to be between desired limits
+      radius = Math.max( this.minDistance, Math.min( this.maxDistance, radius ) );
+
+      offset.x = radius * Math.sin( phi ) * Math.sin( theta );
+      offset.y = radius * Math.cos( phi );
+      offset.z = radius * Math.sin( phi ) * Math.cos( theta );
+
+      position.copy( this.center ).add( offset );
+
+      this.object.lookAt( this.center );
+
+      thetaDelta = 0;
+      phiDelta = 0;
+      scale = 1;
+
+      if ( lastPosition.distanceTo( this.object.position ) > 0 ) {
+
+         this.dispatchEvent( changeEvent );
+
+         lastPosition.copy( this.object.position );
+
+      }
+
+   };
+
+
+   function getAutoRotationAngle() {
+
+      return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+
+   }
+
+   function getZoomScale() {
+
+      return Math.pow( 0.95, scope.userZoomSpeed );
+
+   }
+
+   function onMouseDown( event ) {
+
+      if ( scope.enabled === false ) return;
+      if ( scope.userRotate === false ) return;
+
+      event.preventDefault();
+
+      if ( state === STATE.NONE )
+      {
+         if ( event.button === 0 )
+            state = STATE.ROTATE;
+         if ( event.button === 1 )
+            state = STATE.ZOOM;
+         if ( event.button === 2 )
+            state = STATE.PAN;
+      }
+
+
+      if ( state === STATE.ROTATE ) {
+
+         //state = STATE.ROTATE;
+
+         rotateStart.set( event.clientX, event.clientY );
+
+      } else if ( state === STATE.ZOOM ) {
+
+         //state = STATE.ZOOM;
+
+         zoomStart.set( event.clientX, event.clientY );
+
+      } else if ( state === STATE.PAN ) {
+
+         //state = STATE.PAN;
+
+      }
+
+      document.addEventListener( 'mousemove', onMouseMove, false );
+      document.addEventListener( 'mouseup', onMouseUp, false );
+
+   }
+
+   function onMouseMove( event ) {
+
+      if ( scope.enabled === false ) return;
+
+      event.preventDefault();
+
+
+
+      if ( state === STATE.ROTATE ) {
+
+         rotateEnd.set( event.clientX, event.clientY );
+         rotateDelta.subVectors( rotateEnd, rotateStart );
+
+         scope.rotateLeft( 2 * Math.PI * rotateDelta.x / PIXELS_PER_ROUND * scope.userRotateSpeed );
+         scope.rotateUp( 2 * Math.PI * rotateDelta.y / PIXELS_PER_ROUND * scope.userRotateSpeed );
+
+         rotateStart.copy( rotateEnd );
+
+      } else if ( state === STATE.ZOOM ) {
+
+         zoomEnd.set( event.clientX, event.clientY );
+         zoomDelta.subVectors( zoomEnd, zoomStart );
+
+         if ( zoomDelta.y > 0 ) {
+
+            scope.zoomIn();
+
+         } else {
+
+            scope.zoomOut();
+
+         }
+
+         zoomStart.copy( zoomEnd );
+
+      } else if ( state === STATE.PAN ) {
+
+         var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+         var movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+         scope.pan( new THREE.Vector3( - movementX, movementY, 0 ) );
+
+      }
+
+   }
+
+   function onMouseUp( event ) {
+
+      if ( scope.enabled === false ) return;
+      if ( scope.userRotate === false ) return;
+
+      document.removeEventListener( 'mousemove', onMouseMove, false );
+      document.removeEventListener( 'mouseup', onMouseUp, false );
+
+      state = STATE.NONE;
+
+   }
+
+   function onMouseWheel( event ) {
+
+      if ( scope.enabled === false ) return;
+      if ( scope.userZoom === false ) return;
+
+      var delta = 0;
+
+      if ( event.wheelDelta ) { // WebKit / Opera / Explorer 9
+
+         delta = event.wheelDelta;
+
+      } else if ( event.detail ) { // Firefox
+
+         delta = - event.detail;
+
+      }
+
+      if ( delta > 0 ) {
+
+         scope.zoomOut();
+
+      } else {
+
+         scope.zoomIn();
+
+      }
+
+   }
+
+   function onKeyDown( event ) {
+      event.preventDefault();
+
+      if ( scope.enabled === false ) return;
+      if ( scope.userPan === false ) return;
+
+      switch ( event.keyCode ) {
+
+         case scope.keys.UP:
+            scope.pan( new THREE.Vector3( 0, 1, 0 ) );
+            break;
+         case scope.keys.BOTTOM:
+            scope.pan( new THREE.Vector3( 0, - 1, 0 ) );
+            break;
+         case scope.keys.LEFT:
+            scope.pan( new THREE.Vector3( - 1, 0, 0 ) );
+            break;
+         case scope.keys.RIGHT:
+            scope.pan( new THREE.Vector3( 1, 0, 0 ) );
+            break;
+
+         case scope.keys.ROTATE:
+            state = STATE.ROTATE;
+            break;
+         case scope.keys.ZOOM:
+            state = STATE.ZOOM;
+            break;
+         case scope.keys.PAN:
+            state = STATE.PAN;
+            break;
+
+      }
+
+   }
+
+   function onKeyUp( event ) {
+      event.preventDefault();
+
+      switch ( event.keyCode ) {
+
+         case scope.keys.ROTATE:
+         case scope.keys.ZOOM:
+         case scope.keys.PAN:
+            state = STATE.NONE;
+            break;
+      }
+
+   }
+
+   this.domElement.addEventListener( 'contextmenu', function ( event ) { event.preventDefault(); }, false );
+   this.domElement.addEventListener( 'mousedown', onMouseDown, false );
+   this.domElement.addEventListener( 'mousewheel', onMouseWheel, false );
+   this.domElement.addEventListener( 'DOMMouseScroll', onMouseWheel, false ); // firefox
+   window.addEventListener( 'keydown', onKeyDown, false );
+   window.addEventListener( 'keyup', onKeyUp, false );
+
+};
+
+THREE.OrbitControls.prototype = Object.create( THREE.EventDispatcher.prototype );
+
 if (typeof Object.assign != 'function') {
   Object.assign = function (target, varArgs) { // .length of function is 2
     'use strict';
@@ -22,16 +1226,7 @@ if (typeof Object.assign != 'function') {
     return to;
   };
 }
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments)).next());
-    });
-};
-
+/** For some reason the typescript transpiler is leaving this out so here it is as a hack. */
 var __generator = (this && this.__generator) || function (thisArg, body) {
     var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
     return { next: verb(0), "throw": verb(1), "return": verb(2) };
@@ -1400,8 +2595,9 @@ var DocumentPusher = (function (_super) {
             Logger.log("DP: " + event.type);
             _this.dispatchEvent(event);
         };
-        _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
-        if (options && options.from && options.to && options.from !== options.to) {
+        // They can pick a projection but if the app hasn't loaded the proj4 library we don't do anything as well
+        if (options && options.from && options.to && options.from !== options.to && proj4) {
+            proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
             _this.projectionFn = function reproject(from, to) {
                 return function (coords) {
                     return proj4(from, to, [coords[0], coords[1]]);
@@ -1471,6 +2667,50 @@ var LinesToLinePusher = (function () {
         });
     };
     return LinesToLinePusher;
+}());
+
+var HttpPusher = (function () {
+    function HttpPusher(url, callback) {
+        this.url = url;
+        this.callback = callback;
+    }
+    HttpPusher.prototype.start = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var self = _this;
+            var get = new XMLHttpRequest();
+            var index = 0;
+            var pageNo = 0;
+            var lineBuffer = [];
+            var handleData = function () {
+                if (get.readyState !== null && (get.readyState < 4 || get.status !== 200)) {
+                    return;
+                }
+                var totalLength = get.responseText.length;
+                for (var i = index; i < totalLength; i++) {
+                    var char = get.responseText[i];
+                    if (char === "\r") {
+                        continue;
+                    }
+                    if (char === "\n") {
+                        self.callback(lineBuffer.join(""));
+                        lineBuffer = [];
+                        continue;
+                    }
+                    lineBuffer.push(char);
+                }
+                index = totalLength;
+                Logger.log("Handling data: " + ++pageNo + ", size: " + get.responseText.length + ", state: " + get.readyState);
+                if (get.readyState === 4) {
+                    resolve(null);
+                }
+            };
+            get.onreadystatechange = handleData;
+            get.open("get", _this.url);
+            get.send();
+        });
+    };
+    return HttpPusher;
 }());
 
 var LinesPagedPusher = (function () {
@@ -2317,17 +3557,17 @@ var LabelSwitch = (function (_super) {
     return LabelSwitch;
 }(Modifier));
 
-var VerticalExagerate = (function (_super) {
-    __extends(VerticalExagerate, _super);
-    function VerticalExagerate() {
+var VerticalExaggerate = (function (_super) {
+    __extends(VerticalExaggerate, _super);
+    function VerticalExaggerate() {
         return _super !== null && _super.apply(this, arguments) || this;
     }
-    VerticalExagerate.prototype.set = function (value) {
+    VerticalExaggerate.prototype.set = function (value) {
         if (this.factory && this.factory.getWorld()) {
             this.factory.getWorld().dataContainer.scale.z = value;
         }
     };
-    return VerticalExagerate;
+    return VerticalExaggerate;
 }(Modifier));
 
 var FileDrop = (function () {
@@ -2986,7 +4226,7 @@ exports.loadBorders = loadBorders;
 exports.loadBstones = loadBstones;
 exports.DefaultWorldFactory = DefaultWorldFactory;
 exports.LabelSwitch = LabelSwitch;
-exports.VerticalExagerate = VerticalExagerate;
+exports.VerticalExaggerate = VerticalExaggerate;
 exports.FileDrop = FileDrop;
 exports.Parser = Parser;
 exports.GocadPusherParser = GocadPusherParser;
@@ -2995,6 +4235,7 @@ exports.LocalGocadPusherParser = LocalGocadPusherParser;
 exports.ThrottleProxyParser = ThrottleProxyParser;
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
+exports.HttpPusher = HttpPusher;
 exports.LinesPagedPusher = LinesPagedPusher;
 exports.Logger = Logger;
 
