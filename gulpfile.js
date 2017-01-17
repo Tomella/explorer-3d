@@ -1,19 +1,20 @@
-var buffer = require('vinyl-buffer');
-var del = require('del');
-var gulp = require('gulp');
-var rename = require('gulp-rename');
-var rollup = require('rollup-stream');
+var fs               = require('fs');
+var header           = require('gulp-header');
+var buffer           = require('vinyl-buffer');
+var del              = require('del');
+var gulp             = require('gulp');
+var rename           = require('gulp-rename');
+var rollup           = require('rollup-stream');
 var rollupTypescript = require('rollup-plugin-typescript');
-var source = require('vinyl-source-stream');
-var sourcemaps = require('gulp-sourcemaps');
-var ts = require('typescript');
-var tslint = require("gulp-tslint");
-var uglify = require('gulp-uglify');
+var source           = require('vinyl-source-stream');
+var sourcemaps       = require('gulp-sourcemaps');
+var ts               = require('typescript');
+var tslint           = require("gulp-tslint");
+var uglify           = require('gulp-uglify');
 
 
 var ASSETS_BASE = "dist";
 var RESOURCES_BASE = 'dist/resources';
-var EXAMPLE_OUT_BASE = 'examples/dist';
 
 gulp.task('workers', function () {
    return gulp.src('./source/workers/*.js')
@@ -30,6 +31,7 @@ gulp.task('libs', function() {
 		moduleName: 'Explorer3d',
     })
     .pipe(source('libs.js'))
+    .pipe(header(fs.readFileSync('./resources/polyfills.js', 'utf8')))
     .pipe(gulp.dest('./dist'));
 });
 
@@ -43,6 +45,7 @@ gulp.task('build', function() {
 		moduleName: 'Explorer3d',
     })
     .pipe(source('explorer3d.js'))
+    .pipe(header(fs.readFileSync('./resources/polyfills.js', 'utf8')))
     .pipe(gulp.dest('./dist'));
 });
 
