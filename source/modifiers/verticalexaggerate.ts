@@ -1,6 +1,6 @@
 import { Modifier } from "./modifier";
 
-export class VerticalExagerate extends Modifier {
+export class VerticalExaggerate extends Modifier {
 
    set (value) {
       if (this.factory && this.factory.getWorld()) {

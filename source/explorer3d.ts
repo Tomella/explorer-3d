@@ -4,7 +4,7 @@ export { loadBstones } from "./bridge3js/bstone";
 
 export { DefaultWorldFactory } from "./view3d/defaultfactory";
 export { LabelSwitch } from "./modifiers/labelswitch";
-export { VerticalExagerate } from "./modifiers/verticalexagerate";
+export { VerticalExaggerate } from "./modifiers/verticalexaggerate";
 
 export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";
