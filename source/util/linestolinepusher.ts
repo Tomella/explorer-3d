@@ -4,11 +4,8 @@ export class LinesToLinePusher {
    }
 
    receiver(lines: string[]) {
-      let self = this;
-
       lines.forEach(line => {
-         self.callback(line);
+         this.callback(line);
       });
    }
-
 }
