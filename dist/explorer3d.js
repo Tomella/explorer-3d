@@ -442,54 +442,53 @@ function flowThru(val) {
     return val;
 }
 
-var Logger$1 = (function () {
+var Logger = (function () {
     function Logger() {
     }
+    Logger.noop = function () { };
+    
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
             num = num === NaN ? 0 : num;
-            Logger._level = num;
+            if (!Logger._broken) {
+                Logger.log = console.log;
+                try {
+                    Logger.log("Setting log level");
+                }
+                catch (e) {
+                    Logger._broken = true;
+                }
+            }
+            if (Logger._broken) {
+                Logger.log = num >= 64 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+                Logger.info = num >= 32 ? function () { console.info.apply(console, arguments); } : Logger.noop;
+                Logger.warn = num >= 16 ? function () { console.warn.apply(console, arguments); } : Logger.noop;
+                Logger.log = num >= 8 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+            }
+            else {
+                // We get to keep line numbers if we do it this way.
+                Logger.log = num >= 64 ? console.log : Logger.noop;
+                Logger.info = num >= 32 ? console.info : Logger.noop;
+                Logger.warn = num >= 16 ? console.warn : Logger.noop;
+                Logger.error = num >= 8 ? console.error : Logger.noop;
+            }
         },
         enumerable: true,
         configurable: true
     });
-    Logger.log = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ALL) {
-            Logger._log(line, obj);
-        }
-    };
-    Logger.error = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ERROR) {
-            Logger._log("ERROR: " + line, obj);
-        }
-    };
-    Logger.info = function (line, obj) {
-        if (Logger._level >= Logger.LOG_INFO) {
-            Logger._log("INFO: " + line, obj);
-        }
-    };
-    Logger.warn = function (line, obj) {
-        if (Logger._level >= Logger.LOG_WARN) {
-            Logger._log("WARN: " + line, obj);
-        }
-    };
-    Logger._log = function (line, obj) {
-        if (obj) {
-            console.log(line, obj);
-        }
-        else {
-            console.log(line);
-        }
-    };
     return Logger;
 }());
-Logger$1._level = 0;
-Logger$1.LOG_ALL = 64;
-Logger$1.LOG_INFO = 32;
-Logger$1.LOG_WARN = 16;
-Logger$1.LOG_ERROR = 8;
-Logger$1.LOG_NOTHING = 0;
+Logger.LOG_ALL = 64;
+Logger.LOG_INFO = 32;
+Logger.LOG_WARN = 16;
+Logger.LOG_ERROR = 8;
+Logger.LOG_NOTHING = 0;
+Logger._broken = false;
+Logger.log = Logger.noop;
+Logger.error = Logger.noop;
+Logger.info = Logger.noop;
+Logger.warn = Logger.noop;
 
 function toBool(val) {
     return "true" === val;
@@ -554,7 +553,7 @@ var HeaderPusher = (function (_super) {
                 this.header.values[parts[0]] = mapper(parts[1]);
             }
             else {
-                Logger$1.warn("That doesn't look like a pair: " + line);
+                Logger.warn("That doesn't look like a pair: " + line);
             }
         }
         return true;
@@ -1299,7 +1298,7 @@ var TypeFactoryPusher = (function (_super) {
         EventNames.names.forEach(function (name) { return _this.type.addEventListener(name, eventHandler); });
         return this.typeFactory.isValid;
         function eventHandler(event) {
-            Logger$1.log("TFP: " + event.type);
+            Logger.log("TFP: " + event.type);
             self.dispatchEvent(event);
         }
     };
@@ -1329,7 +1328,7 @@ var DocumentPusher = (function (_super) {
         var _this = _super.call(this) || this;
         _this.proj4 = proj4;
         _this.eventHandler = function (event) {
-            Logger$1.log("DP: " + event.type);
+            Logger.log("DP: " + event.type);
             _this.dispatchEvent(event);
         };
         _this.proj4.defs("EPSG:3112", "+proj=lcc +lat_1=-18 +lat_2=-36 +lat_0=0 +lon_0=134 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -1358,7 +1357,7 @@ var DocumentPusher = (function (_super) {
         var consumed = this.typefactorypusher.push(line);
         // Well behaved children will have changed state when not consuming so *shouldn't* get in an infinite loop.
         if (!consumed) {
-            Logger$1.log("NOT PUSHED: " + line);
+            Logger.log("NOT PUSHED: " + line);
             this.push(line);
             // Just in case they don't behave we'll swallow it.
             return true;
@@ -1397,9 +1396,9 @@ var LinesToLinePusher = (function () {
         this.callback = callback;
     }
     LinesToLinePusher.prototype.receiver = function (lines) {
-        var self = this;
+        var _this = this;
         lines.forEach(function (line) {
-            self.callback(line);
+            _this.callback(line);
         });
     };
     return LinesToLinePusher;
@@ -1446,8 +1445,8 @@ var LinesPagedPusher = (function () {
                             this.callback(group);
                         }
                         catch (e) {
-                            Logger$1.error(e);
-                            Logger$1.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
+                            Logger.error(e);
+                            Logger.error("Someone died. Continue on.\n\n" + group.join("\n").substr(0, 2000));
                         }
                         return [4 /*yield*/, this.read()];
                     case 4:
@@ -1463,8 +1462,8 @@ var LinesPagedPusher = (function () {
                                 this.callback(lines);
                             }
                             catch (e) {
-                                Logger$1.error(e);
-                                Logger$1.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
+                                Logger.error(e);
+                                Logger.error("Someone died. Continue on.\n\n" + lines.join("\n").substr(0, 2000));
                             }
                         }
                         result = false;
@@ -1484,7 +1483,7 @@ var LinesPagedPusher = (function () {
                 this.index = 0;
                 self = this;
                 start = this.pageNo * this.blockSize;
-                Logger$1.log("Block size: " + this.blockSize + ", file size: " + this.length);
+                Logger.log("Block size: " + this.blockSize + ", file size: " + this.length);
                 return [2 /*return*/, new Promise(function (resolve) {
                         if (start >= _this.length) {
                             resolve(false);
@@ -1492,21 +1491,21 @@ var LinesPagedPusher = (function () {
                         }
                         try {
                             self.reader.onloadend = function (evt) {
-                                Logger$1.log("We have loaded with ready state = " + evt.target["readyState"]);
+                                Logger.log("We have loaded with ready state = " + evt.target["readyState"]);
                                 if (evt.target["readyState"] === FileReader.prototype.DONE) {
-                                    Logger$1.log("Reading page " + self.pageNo);
+                                    Logger.log("Reading page " + self.pageNo);
                                     self.buffer = evt.target["result"];
                                     resolve(_this.hasMore());
                                 }
                             };
                             self.reader.onerror = function (evt) {
-                                Logger$1.log("What do you mean, error");
+                                Logger.log("What do you mean, error");
                             };
                             var blob = self.file.slice(start, start + self.blockSize);
                             self.reader.readAsText(blob);
                         }
                         catch (e) {
-                            Logger$1.log(e);
+                            Logger.log(e);
                         }
                     })];
             });
@@ -1849,7 +1848,7 @@ var World = (function () {
             // get size data (height depends only on font size)
             var metrics = context.measureText(message);
             var textWidth = metrics.width;
-            Logger$1.log(textWidth);
+            Logger.log(textWidth);
             // background color
             context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","
                 + parms.backgroundColor.b + "," + parms.backgroundColor.a + ")";
@@ -2276,12 +2275,12 @@ var FileDrop = (function () {
         function dragenter(e) {
             e.stopPropagation();
             e.preventDefault();
-            Logger$1.log("dragenter");
+            Logger.log("dragenter");
         }
         function dragover(e) {
             e.stopPropagation();
             e.preventDefault();
-            Logger$1.log("dragover");
+            Logger.log("dragover");
         }
         function drop(e) {
             e.stopPropagation();
@@ -2405,7 +2404,7 @@ var PLineToLineSegments = (function (_super) {
                 _this.ws.push(w);
             }
         });
-        Logger$1.log("WE have " + target.length + " vertices now");
+        Logger.log("WE have " + target.length + " vertices now");
     };
     PLineToLineSegments.prototype.processHeader = function (data) {
         if (this.geometry) {
@@ -2560,7 +2559,7 @@ var VSetToPoints = (function (_super) {
         vertices.forEach(function (vertex) {
             target.push(new THREE.Vector3(vertex[0], vertex[1], vertex[2]));
         });
-        Logger$1.log("WE have " + target.length + " vertices now");
+        Logger.log("WE have " + target.length + " vertices now");
     };
     VSetToPoints.prototype.processHeader = function (data) {
         if (this.geometry) {
@@ -2662,54 +2661,53 @@ var PipeToThreedObj = (function (_super) {
     return PipeToThreedObj;
 }(Pipeline));
 
-var Logger$2 = (function () {
+var Logger$1 = (function () {
     function Logger() {
     }
+    Logger.noop = function () { };
+    
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
             num = num === NaN ? 0 : num;
-            Logger._level = num;
+            if (!Logger._broken) {
+                Logger.log = console.log;
+                try {
+                    Logger.log("Setting log level");
+                }
+                catch (e) {
+                    Logger._broken = true;
+                }
+            }
+            if (Logger._broken) {
+                Logger.log = num >= 64 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+                Logger.info = num >= 32 ? function () { console.info.apply(console, arguments); } : Logger.noop;
+                Logger.warn = num >= 16 ? function () { console.warn.apply(console, arguments); } : Logger.noop;
+                Logger.log = num >= 8 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+            }
+            else {
+                // We get to keep line numbers if we do it this way.
+                Logger.log = num >= 64 ? console.log : Logger.noop;
+                Logger.info = num >= 32 ? console.info : Logger.noop;
+                Logger.warn = num >= 16 ? console.warn : Logger.noop;
+                Logger.error = num >= 8 ? console.error : Logger.noop;
+            }
         },
         enumerable: true,
         configurable: true
     });
-    Logger.log = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ALL) {
-            Logger._log(line, obj);
-        }
-    };
-    Logger.error = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ERROR) {
-            Logger._log("ERROR: " + line, obj);
-        }
-    };
-    Logger.info = function (line, obj) {
-        if (Logger._level >= Logger.LOG_INFO) {
-            Logger._log("INFO: " + line, obj);
-        }
-    };
-    Logger.warn = function (line, obj) {
-        if (Logger._level >= Logger.LOG_WARN) {
-            Logger._log("WARN: " + line, obj);
-        }
-    };
-    Logger._log = function (line, obj) {
-        if (obj) {
-            console.log(line, obj);
-        }
-        else {
-            console.log(line);
-        }
-    };
     return Logger;
 }());
-Logger$2._level = 0;
-Logger$2.LOG_ALL = 64;
-Logger$2.LOG_INFO = 32;
-Logger$2.LOG_WARN = 16;
-Logger$2.LOG_ERROR = 8;
-Logger$2.LOG_NOTHING = 0;
+Logger$1.LOG_ALL = 64;
+Logger$1.LOG_INFO = 32;
+Logger$1.LOG_WARN = 16;
+Logger$1.LOG_ERROR = 8;
+Logger$1.LOG_NOTHING = 0;
+Logger$1._broken = false;
+Logger$1.log = Logger$1.noop;
+Logger$1.error = Logger$1.noop;
+Logger$1.info = Logger$1.noop;
+Logger$1.warn = Logger$1.noop;
 
 var GocadPusherParser = (function (_super) {
     __extends(GocadPusherParser, _super);
@@ -2730,17 +2728,17 @@ var GocadPusherParser = (function (_super) {
             });
             pipe.addEventListener("error", function (event) {
                 worker.terminate();
-                Logger$2.log("There is an error with your pipes!");
+                Logger$1.log("There is an error with your pipes!");
                 reject(event.data);
             });
             worker.addEventListener("message", function (response) {
                 var message = JSON.parse(response.data);
                 pipe.pipe(message);
-                Logger$2.log("EVENT = " + message.eventName);
+                Logger$1.log("EVENT = " + message.eventName);
             });
             worker.addEventListener("error", function (err) {
-                Logger$2.log("There is an error with your worker!");
-                Logger$2.log(err);
+                Logger$1.log("There is an error with your worker!");
+                Logger$1.log(err);
             });
             worker.postMessage(data);
         });
@@ -2748,6 +2746,44 @@ var GocadPusherParser = (function (_super) {
     return GocadPusherParser;
 }(Parser));
 GocadPusherParser.WORKER_NAME = "gocadpusher.js";
+
+var HttpGocadPusherParser = (function (_super) {
+    __extends(HttpGocadPusherParser, _super);
+    function HttpGocadPusherParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    HttpGocadPusherParser.prototype.parse = function (data) {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var worker = new Worker(_this.getWorkersBase() + HttpGocadPusherParser.WORKER_NAME);
+            var pipe = new PipeToThreedObj();
+            pipe.addEventListener("complete", function (event) {
+                worker.terminate();
+                resolve(event.data);
+            });
+            pipe.addEventListener("error", function (event) {
+                worker.terminate();
+                Logger$1.log("There is an error with your pipes!");
+                reject(event.data);
+            });
+            worker.addEventListener("message", function (response) {
+                var message = JSON.parse(response.data);
+                pipe.pipe(message);
+                Logger$1.log("EVENT = " + message.eventName);
+            });
+            worker.addEventListener("error", function (err) {
+                Logger$1.log("There is an error with your worker!");
+                Logger$1.log(err);
+            });
+            worker.postMessage(data);
+        });
+    };
+    return HttpGocadPusherParser;
+}(Parser));
+HttpGocadPusherParser.WORKER_NAME = "gocadhttppusher.js";
 
 var eventList = [
     "start",
@@ -2788,18 +2824,18 @@ var LocalGocadPusherParser = (function (_super) {
                 resolve(event.data);
             });
             pipe.addEventListener("error", function (event) {
-                Logger$2.log("There is an error with your pipes!");
+                Logger$1.log("There is an error with your pipes!");
                 reject(event.data);
             });
             new LinesPagedPusher(file, options, function (lines) {
                 linesToLinePusher.receiver(lines);
             }).start().then(function () {
-                Logger$2.log("******************* Local Kaput ****************************");
+                Logger$1.log("******************* Local Kaput ****************************");
             });
             eventList.forEach(function (name) {
-                Logger$2.log("Adding listener: " + name);
+                Logger$1.log("Adding listener: " + name);
                 pusher.addEventListener(name, function defaultHandler(event) {
-                    Logger$2.log("GPW: " + event.type);
+                    Logger$1.log("GPW: " + event.type);
                     pipe.pipe({
                         eventName: event.type,
                         data: event.data
@@ -2847,14 +2883,14 @@ var ThrottleProxyParser = (function (_super) {
         function runCleaner() {
         }
         function checkJobs() {
-            Logger$2.log("We have " + self.count + " jobs queued");
+            Logger$1.log("We have " + self.count + " jobs queued");
             if (self.count > self.max || self.count < 1) {
                 return;
             }
             runJob();
         }
         function runJob() {
-            Logger$2.log("Jobs length = " + self.count);
+            Logger$1.log("Jobs length = " + self.count);
             var job = self.stack.shift();
             if (job) {
                 job.self.parser.parse(job.file, job.options).then(function (response) {
@@ -2862,8 +2898,8 @@ var ThrottleProxyParser = (function (_super) {
                     runJob();
                     job.resolver(response);
                 }).catch(function (err) {
-                    Logger$2.log("Ooops!");
-                    Logger$2.log(err);
+                    Logger$1.log("Ooops!");
+                    Logger$1.log(err);
                     decrementCount();
                 });
             }
@@ -2885,12 +2921,13 @@ exports.VerticalExagerate = VerticalExagerate;
 exports.FileDrop = FileDrop;
 exports.Parser = Parser;
 exports.GocadPusherParser = GocadPusherParser;
+exports.HttpGocadPusherParser = HttpGocadPusherParser;
 exports.LocalGocadPusherParser = LocalGocadPusherParser;
 exports.ThrottleProxyParser = ThrottleProxyParser;
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
 exports.LinesPagedPusher = LinesPagedPusher;
-exports.Logger = Logger$1;
+exports.Logger = Logger;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

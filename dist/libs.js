@@ -445,51 +445,50 @@ function flowThru(val) {
 var Logger = (function () {
     function Logger() {
     }
+    Logger.noop = function () { };
+    
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
             num = num === NaN ? 0 : num;
-            Logger._level = num;
+            if (!Logger._broken) {
+                Logger.log = console.log;
+                try {
+                    Logger.log("Setting log level");
+                }
+                catch (e) {
+                    Logger._broken = true;
+                }
+            }
+            if (Logger._broken) {
+                Logger.log = num >= 64 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+                Logger.info = num >= 32 ? function () { console.info.apply(console, arguments); } : Logger.noop;
+                Logger.warn = num >= 16 ? function () { console.warn.apply(console, arguments); } : Logger.noop;
+                Logger.log = num >= 8 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+            }
+            else {
+                // We get to keep line numbers if we do it this way.
+                Logger.log = num >= 64 ? console.log : Logger.noop;
+                Logger.info = num >= 32 ? console.info : Logger.noop;
+                Logger.warn = num >= 16 ? console.warn : Logger.noop;
+                Logger.error = num >= 8 ? console.error : Logger.noop;
+            }
         },
         enumerable: true,
         configurable: true
     });
-    Logger.log = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ALL) {
-            Logger._log(line, obj);
-        }
-    };
-    Logger.error = function (line, obj) {
-        if (Logger._level >= Logger.LOG_ERROR) {
-            Logger._log("ERROR: " + line, obj);
-        }
-    };
-    Logger.info = function (line, obj) {
-        if (Logger._level >= Logger.LOG_INFO) {
-            Logger._log("INFO: " + line, obj);
-        }
-    };
-    Logger.warn = function (line, obj) {
-        if (Logger._level >= Logger.LOG_WARN) {
-            Logger._log("WARN: " + line, obj);
-        }
-    };
-    Logger._log = function (line, obj) {
-        if (obj) {
-            console.log(line, obj);
-        }
-        else {
-            console.log(line);
-        }
-    };
     return Logger;
 }());
-Logger._level = 0;
 Logger.LOG_ALL = 64;
 Logger.LOG_INFO = 32;
 Logger.LOG_WARN = 16;
 Logger.LOG_ERROR = 8;
 Logger.LOG_NOTHING = 0;
+Logger._broken = false;
+Logger.log = Logger.noop;
+Logger.error = Logger.noop;
+Logger.info = Logger.noop;
+Logger.warn = Logger.noop;
 
 function toBool(val) {
     return "true" === val;
@@ -1397,9 +1396,9 @@ var LinesToLinePusher = (function () {
         this.callback = callback;
     }
     LinesToLinePusher.prototype.receiver = function (lines) {
-        var self = this;
+        var _this = this;
         lines.forEach(function (line) {
-            self.callback(line);
+            _this.callback(line);
         });
     };
     return LinesToLinePusher;
