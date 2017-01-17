@@ -9,5 +9,6 @@ export { VerticalExagerate } from "./modifiers/verticalexagerate";
 export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";
 export { GocadPusherParser }  from "./parser/gocadpusher";
+export { HttpGocadPusherParser }  from "./parser/httpgocadpusher";
 export { LocalGocadPusherParser }  from "./parser/localgocadpusher";
 export { ThrottleProxyParser }  from "./parser/throttleproxyparser";
