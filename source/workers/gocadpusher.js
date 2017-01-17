@@ -1,12 +1,9 @@
-importScripts('../resources/proj4.js');
-
 (function (context) {
 
    if(!context["Promise"]) {
       importScripts('../resources/es6-promise.js');
    }
-   importScripts('../resources/polyfills.js',
-              '../libs.js');
+   importScripts('../resources/proj4.js', '../libs.js');
 
    var eventList = [
       {
