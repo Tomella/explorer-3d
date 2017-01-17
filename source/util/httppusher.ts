@@ -9,6 +9,7 @@ export class HttpPusher implements LinesPusher {
 
    start(): Promise<void> {
       return new Promise<void>((resolve, reject) => {
+         let self = this;
          let get = new XMLHttpRequest();
          let index = 0;
          let pageNo = 0;
@@ -27,7 +28,7 @@ export class HttpPusher implements LinesPusher {
                   continue;
                }
                if (char === "\n") {
-                  this.callback(lineBuffer.join(""));
+                  self.callback(lineBuffer.join(""));
                   lineBuffer = [];
                   continue;
                }
