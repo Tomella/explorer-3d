@@ -2683,24 +2683,26 @@ var HttpPusher = (function () {
             var pageNo = 0;
             var lineBuffer = [];
             var handleData = function () {
-                if (get.readyState !== null && (get.readyState < 4 || get.status !== 200)) {
+                if (get.readyState !== null && (get.readyState < 3 || get.status !== 200)) {
                     return;
                 }
-                var totalLength = get.responseText.length;
+                var text = get.responseText;
+                var totalLength = text.length;
                 for (var i = index; i < totalLength; i++) {
-                    var char = get.responseText[i];
+                    var char = text[i];
                     if (char === "\r") {
                         continue;
                     }
                     if (char === "\n") {
-                        self.callback(lineBuffer.join(""));
+                        var line = lineBuffer.join("");
                         lineBuffer = [];
+                        self.callback(line);
                         continue;
                     }
                     lineBuffer.push(char);
                 }
                 index = totalLength;
-                Logger.log("Handling data: " + ++pageNo + ", size: " + get.responseText.length + ", state: " + get.readyState);
+                // Logger.log("Handling data: " + ++pageNo + ", size: " + text.length + ", state: " + get.readyState);
                 if (get.readyState === 4) {
                     resolve(null);
                 }

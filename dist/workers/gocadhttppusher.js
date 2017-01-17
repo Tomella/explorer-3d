@@ -68,7 +68,7 @@
                eventName: "readComplete",
                data: {}
             }));
-         }, 10000);
+         }, 20000);
       });
 
    }, false);

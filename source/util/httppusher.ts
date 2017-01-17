@@ -16,27 +16,29 @@ export class HttpPusher implements LinesPusher {
          let lineBuffer = [];
 
          let handleData = () => {
-            if (get.readyState !== null && (get.readyState < 4 || get.status !== 200)) {
+            if (get.readyState !== null && (get.readyState < 3 || get.status !== 200)) {
                return;
             }
 
-            let totalLength = get.responseText.length;
+            let text = get.responseText;
+            let totalLength = text.length;
 
             for ( let i = index; i < totalLength; i++) {
-               let char = get.responseText[i];
+               let char = text[i];
                if (char === "\r") {
                   continue;
                }
                if (char === "\n") {
-                  self.callback(lineBuffer.join(""));
+                  let line = lineBuffer.join("");
                   lineBuffer = [];
+                  self.callback(line);
                   continue;
                }
                lineBuffer.push(char);
             }
             index = totalLength;
 
-            Logger.log("Handling data: " + ++pageNo + ", size: " + get.responseText.length + ", state: " + get.readyState);
+            // Logger.log("Handling data: " + ++pageNo + ", size: " + text.length + ", state: " + get.readyState);
             if (get.readyState === 4) {
                resolve(null);
             }

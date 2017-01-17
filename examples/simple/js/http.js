@@ -65,11 +65,11 @@
    gocadParser = new Explorer3d.ThrottleProxyParser(gocadParser, appOptions.workerCount);
 
 
-/********************************************************
- * End of calling the API. Now the UI.
- * This is just plain old HTML with no framework.
- * There are some UI helper calls provided by the API.
- ******************************************************** */
+   /********************************************************
+    * End of calling the API. Now the UI.
+    * This is just plain old HTML with no framework.
+    * There are some UI helper calls provided by the API.
+    ******************************************************** */
 
    /**
     * Some UI to keep the users happy
@@ -112,9 +112,6 @@
          color = color ? color : "lightgray"
          template.style.backgroundColor = color;
 
-         let button = document.createElement("button");
-         let x = document.createTextNode("X");
-
          let span = document.createElement("span");
          span.className = "layerspan";
 
@@ -127,22 +124,18 @@
             obj.visible = ev.target.checked;
          };
 
-         button.appendChild(x);
-         button.className = "crossButton";
-         button.onclick = function(event) {
-            factory.remove(obj);
-         }
-
          span.appendChild(inp);
          span.appendChild(text);
 
          template.appendChild(span);
-         template.appendChild(button);
          target.appendChild(template);
          target.className = "active";
       });
    });
 
+   /**
+    * Finish of UI modifiers
+    */
 
    // See if we set projections
    let options = {
@@ -154,14 +147,14 @@
    let path = document.location.pathname.substr(0, document.location.pathname.lastIndexOf("/") + 1) + "../data/";
 
    // Fire off three requests, wait for their promises to resolve then add some vertical exaggeration.
-   Promise.all(["sample.ts", "sample.vs", "sample.pl"].map(name => run(path + name))).then(() => {
+   Promise.all(["sample.ts", "sample.pl", "sample.vs"].map(function(name) { return run(path + name) })).then(function() {
       // Make it look prettier.
       verticalExaggerate.set(dom.verticalExaggeration.value = 64);
    });
 
    function run(url) {
       // We are all set up so read me.
-      let promise = gocadParser.parse({url, options});
+      let promise = gocadParser.parse({url: url, options: options});
 
       // Off to the parser to do its best
       Explorer3d.Logger.log(seconds() + ": We have started the process.");
