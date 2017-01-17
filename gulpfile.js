@@ -1,4 +1,5 @@
 var fs               = require('fs');
+var concat           = require('gulp-concat');
 var header           = require('gulp-header');
 var buffer           = require('vinyl-buffer');
 var del              = require('del');
@@ -6,6 +7,7 @@ var gulp             = require('gulp');
 var rename           = require('gulp-rename');
 var rollup           = require('rollup-stream');
 var rollupTypescript = require('rollup-plugin-typescript');
+var runSequence      = require('run-sequence');
 var source           = require('vinyl-source-stream');
 var sourcemaps       = require('gulp-sourcemaps');
 var ts               = require('typescript');
@@ -31,7 +33,7 @@ gulp.task('libs', function() {
 		moduleName: 'Explorer3d',
     })
     .pipe(source('libs.js'))
-    .pipe(header(fs.readFileSync('./resources/polyfills.js', 'utf8')))
+    .pipe(header(fs.readFileSync('./source/polyfills.js', 'utf8')))
     .pipe(gulp.dest('./dist'));
 });
 
@@ -45,10 +47,16 @@ gulp.task('build', function() {
 		moduleName: 'Explorer3d',
     })
     .pipe(source('explorer3d.js'))
-    .pipe(header(fs.readFileSync('./resources/polyfills.js', 'utf8')))
+    .pipe(header(fs.readFileSync('./build/dependencies.js', 'utf8')))
     .pipe(gulp.dest('./dist'));
 });
 
+gulp.task('dependencies', function() {
+  return gulp.src(["./resources/dependencies/*.js", "./source/polyfills.js"])
+      .pipe(concat('dependencies.js'))
+      .pipe(header("// WARNING: Don't edit.\n// This file contains all the content from the dependencies directory. It's rolled up into the explorer3d.js file.\n\n"))
+      .pipe(gulp.dest('./build'));
+});
 
 gulp.task('dist', ['build', 'libs', 'workers'], function () {
    return gulp.src(['dist/*.js', '!dist/*.min.js'])
@@ -60,7 +68,8 @@ gulp.task('dist', ['build', 'libs', 'workers'], function () {
 });
 
 gulp.task('resources', function () {
-   return gulp.src('resources/**/*')
+   // Polyfills gets rolled up in the larger files. The others are optional.
+   return gulp.src(['resources/**/*.*', "!resources/dependencies/*"])
       .pipe(gulp.dest(RESOURCES_BASE));
 });
 
@@ -82,7 +91,13 @@ gulp.task('watch', function () {
 });
 
 gulp.task('clean', function (cb) {
-   return del(["dist"], cb);
+   return del(["dist", "build"], cb);
 });
 
-gulp.task('default', ['examples', 'tslint', 'watch']);
+
+// We clean, package up the little dependencies and then we are ready to rock and roll.
+// Note that if new dependencies are added you need run the default task to repackage everything.
+// We don't watch dependencies or expect them to change between gulp restarts.
+gulp.task('default', function(callback) {
+  return runSequence('clean', 'dependencies', ['examples', 'tslint', 'watch']);
+});
