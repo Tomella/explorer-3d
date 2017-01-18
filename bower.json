@@ -3,12 +3,7 @@
   "version": "0.0.1",
   "description": "Explorer 3d is an API for viewing common geospatial file formats in WebGL.",
   "homepage": "https://github.com/Tomella/explorer-3d",
-  "main": [
-     "dist/explorer3d.js",
-     "dist/explorer3d.min.js",
-     "dist/workers/gocadpusher.js",
-     "dist/workers/gocadhttppusher.js"
-  ],
+  "main": "dist/explorer3d.js",
   "keywords": [
     "gis",
     "3d",
