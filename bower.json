@@ -23,7 +23,6 @@
     "tests",
     "source",
     "docs",
-    "*.json",
-    "*.js"
+    "*.json"
   ]
 }
