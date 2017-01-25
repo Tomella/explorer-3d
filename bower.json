@@ -12,7 +12,7 @@
   "license": "LICENCE",
   "dependencies": {
     "elevation": "git@github.com:Tomella/elevation.git",
-    "geotiffparser": "git@github.com:xlhomme/GeotiffParser.js.git",
+    "geotiffparser": "https://github.com/xlhomme/GeotiffParser.js.git",
     "proj4": "~2.3.15",
     "three.js": "*"
   },
