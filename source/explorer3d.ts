@@ -8,6 +8,7 @@ export { VerticalExaggerate } from "./modifiers/verticalexaggerate";
 
 export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";
+export { ElevationParser }  from "./parser/elevationparser";
 export { GocadPusherParser }  from "./parser/gocadpusher";
 export { HttpGocadPusherParser }  from "./parser/httpgocadpusher";
 export { LocalGocadPusherParser }  from "./parser/localgocadpusher";

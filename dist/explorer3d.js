@@ -3621,6 +3621,70 @@ var Parser = (function () {
 }());
 Parser.codeBase = "";
 
+var CswElevationPointsParser = (function (_super) {
+    __extends(CswElevationPointsParser, _super);
+    function CswElevationPointsParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    CswElevationPointsParser.prototype.parse = function () {
+        var _this = this;
+        var loader = new Elevation.CswXyzLoader(this.options);
+        return loader.load().then(function (res) {
+            var pointGeo = new THREE.Geometry();
+            var rgb = hexToRgb(_this.options.color ? _this.options.color : "#34ff23");
+            var color = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+            res.forEach(function (point, i) {
+                var x = point.x;
+                var y = point.y;
+                var z = point.z;
+                var p = new THREE.Vector3(x, y, z);
+                pointGeo.vertices.push(p);
+                pointGeo.colors.push(color);
+            });
+            if (res.length) {
+                pointGeo.computeBoundingSphere();
+                if (pointGeo.boundingSphere.radius < 5) {
+                    console.log("Overriding bounding sphere radius" + pointGeo.boundingSphere.radius);
+                    pointGeo.boundingSphere.radius = 5;
+                }
+            }
+            var mat = new THREE.PointsMaterial({
+                vertexColors: THREE.VertexColors,
+                size: 1
+            });
+            var points = new THREE.Points(pointGeo, mat);
+            points.userData = _this.options;
+            return points;
+        });
+    };
+    return CswElevationPointsParser;
+}(Parser));
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+var ElevationParser = (function (_super) {
+    __extends(ElevationParser, _super);
+    function ElevationParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    ElevationParser.prototype.parse = function (data) {
+        return new CswElevationPointsParser(this.options).parse();
+    };
+    return ElevationParser;
+}(Parser));
+
 var Pipeline = (function (_super) {
     __extends(Pipeline, _super);
     function Pipeline() {
@@ -4231,6 +4295,7 @@ exports.LabelSwitch = LabelSwitch;
 exports.VerticalExaggerate = VerticalExaggerate;
 exports.FileDrop = FileDrop;
 exports.Parser = Parser;
+exports.ElevationParser = ElevationParser;
 exports.GocadPusherParser = GocadPusherParser;
 exports.HttpGocadPusherParser = HttpGocadPusherParser;
 exports.LocalGocadPusherParser = LocalGocadPusherParser;
