@@ -793,8 +793,8 @@ THREE.ColorMapKeywords = {
    "rainbow":    [ [ 0.0, '0x0000FF' ], [ 0.2, '0x00FFFF' ], [ 0.5, '0x00FF00' ], [ 0.8, '0xFFFF00' ],  [ 1.0, '0xFF0000' ] ],
    "cooltowarm": [ [ 0.0, '0x3C4EC2' ], [ 0.2, '0x9BBCFF' ], [ 0.5, '0xDCDCDC' ], [ 0.8, '0xF6A385' ],  [ 1.0, '0xB40426' ] ],
    "blackbody" : [ [ 0.0, '0x000000' ], [ 0.2, '0x780000' ], [ 0.5, '0xE63200' ], [ 0.8, '0xFFFF00' ],  [ 1.0, '0xFFFFFF' ] ],
-   "grayscale" : [ [ 0.0, '0x000000' ], [ 0.2, '0x404040' ], [ 0.5, '0x7F7F80' ], [ 0.8, '0xBFBFBF' ],  [ 1.0, '0xFFFFFF' ] ]
-
+   "grayscale" : [ [ 0.0, '0x000000' ], [ 0.2, '0x404040' ], [ 0.5, '0x7F7F80' ], [ 0.8, '0xBFBFBF' ],  [ 1.0, '0xFFFFFF' ] ],
+   "land" :      [ [ 0.0, '0x129247' ], [ 0.2, '0xC9E775' ], [ 0.5, '0xDAEF7A' ], [ 0.8, '0xEDF97D' ],  [ 1.0, '0xFBFD80' ] ]
 };
 /**
  * @author qiao / https://github.com/qiao
@@ -3634,15 +3634,18 @@ var CswElevationPointsParser = (function (_super) {
         var loader = new Elevation.CswXyzLoader(this.options);
         return loader.load().then(function (res) {
             var pointGeo = new THREE.Geometry();
-            var rgb = hexToRgb(_this.options.color ? _this.options.color : "#34ff23");
-            var color = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+            var rgb = hexToRgb(_this.options.color ? _this.options.color : "#7777ff");
+            var blue = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+            var lut = new THREE.Lut("land", 2200);
+            lut.setMax(Math.floor(2200));
+            lut.setMin(Math.floor(0));
             res.forEach(function (point, i) {
                 var x = point.x;
                 var y = point.y;
                 var z = point.z;
                 var p = new THREE.Vector3(x, y, z);
                 pointGeo.vertices.push(p);
-                pointGeo.colors.push(color);
+                pointGeo.colors.push(z > 0 ? lut.getColor(z) : blue);
             });
             if (res.length) {
                 pointGeo.computeBoundingSphere();

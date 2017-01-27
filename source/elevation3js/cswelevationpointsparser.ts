@@ -11,16 +11,18 @@ export class CswElevationPointsParser extends Parser {
       let loader = new Elevation.CswXyzLoader(this.options);
       return loader.load().then(res => {
          let pointGeo = new THREE.Geometry();
-         let rgb = hexToRgb(this.options.color ? this.options.color : "#34ff23");
-         let color = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+         let rgb = hexToRgb(this.options.color ? this.options.color : "#7777ff");
+         let blue = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+         var lut = new THREE.Lut("land", 2200);
+         lut.setMax(Math.floor(2200));
+         lut.setMin(Math.floor(0));
          res.forEach((point, i) => {
             let x = point.x;
             let y = point.y;
             let z = point.z;
             let p = new THREE.Vector3(x, y, z);
             pointGeo.vertices.push(p);
-            pointGeo.colors.push(color);
-
+            pointGeo.colors.push(z > 0 ? lut.getColor(z) : blue);
          });
          if (res.length) {
             pointGeo.computeBoundingSphere();
