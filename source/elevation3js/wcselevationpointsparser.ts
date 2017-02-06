@@ -1,19 +1,20 @@
 import { Parser } from "../parser/parser";
 declare var Elevation: any;
 
-export class CswElevationPointsParser extends Parser {
+export class WcsElevationPointsParser extends Parser {
 
    constructor(public options: any = {}) {
       super();
    }
 
    public parse(): Promise<any> {
-      let loader = new Elevation.CswXyzLoader(this.options);
+      let loader = new Elevation.WcsXyzLoader(this.options);
       return loader.load().then(res => {
          let pointGeo = new THREE.Geometry();
-         let rgb = hexToRgb(this.options.color ? this.options.color : "#7777ff");
+         let rgb = hexToRgb(this.options.color ? this.options.color : "#bbbbff");
          let blue = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-         var lut = new THREE.Lut("land", 2200);
+         let lut = new THREE.Lut("land", 2200);
+
          lut.setMax(Math.floor(2200));
          lut.setMin(Math.floor(0));
          res.forEach((point, i) => {

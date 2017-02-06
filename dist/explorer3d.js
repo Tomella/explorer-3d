@@ -794,7 +794,8 @@ THREE.ColorMapKeywords = {
    "cooltowarm": [ [ 0.0, '0x3C4EC2' ], [ 0.2, '0x9BBCFF' ], [ 0.5, '0xDCDCDC' ], [ 0.8, '0xF6A385' ],  [ 1.0, '0xB40426' ] ],
    "blackbody" : [ [ 0.0, '0x000000' ], [ 0.2, '0x780000' ], [ 0.5, '0xE63200' ], [ 0.8, '0xFFFF00' ],  [ 1.0, '0xFFFFFF' ] ],
    "grayscale" : [ [ 0.0, '0x000000' ], [ 0.2, '0x404040' ], [ 0.5, '0x7F7F80' ], [ 0.8, '0xBFBFBF' ],  [ 1.0, '0xFFFFFF' ] ],
-   "land" :      [ [ 0.0, '0x129247' ], [ 0.2, '0xC9E775' ], [ 0.5, '0xDAEF7A' ], [ 0.8, '0xEDF97D' ],  [ 1.0, '0xFBFD80' ] ]
+   "water" :     [ [ 0.0, '0x0000aa' ], [ 0.2, '0x2020bb' ], [ 0.5, '0x5050cc' ], [ 0.8, '0x8080dd' ],  [ 1.0, '0xa0a0ff' ] ],
+   "land" :      [ [ 0.0, '0x128A47' ], [ 0.2, '0xd9E775' ], [ 0.4, '0xDAEF7A' ], [ 0.7, '0xEDF97D' ],  [ 1.0, '0xffffff' ] ]
 };
 /**
  * @author qiao / https://github.com/qiao
@@ -3621,20 +3622,20 @@ var Parser = (function () {
 }());
 Parser.codeBase = "";
 
-var CswElevationPointsParser = (function (_super) {
-    __extends(CswElevationPointsParser, _super);
-    function CswElevationPointsParser(options) {
+var WcsElevationPointsParser = (function (_super) {
+    __extends(WcsElevationPointsParser, _super);
+    function WcsElevationPointsParser(options) {
         if (options === void 0) { options = {}; }
         var _this = _super.call(this) || this;
         _this.options = options;
         return _this;
     }
-    CswElevationPointsParser.prototype.parse = function () {
+    WcsElevationPointsParser.prototype.parse = function () {
         var _this = this;
-        var loader = new Elevation.CswXyzLoader(this.options);
+        var loader = new Elevation.WcsXyzLoader(this.options);
         return loader.load().then(function (res) {
             var pointGeo = new THREE.Geometry();
-            var rgb = hexToRgb(_this.options.color ? _this.options.color : "#7777ff");
+            var rgb = hexToRgb(_this.options.color ? _this.options.color : "#bbbbff");
             var blue = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
             var lut = new THREE.Lut("land", 2200);
             lut.setMax(Math.floor(2200));
@@ -3663,7 +3664,7 @@ var CswElevationPointsParser = (function (_super) {
             return points;
         });
     };
-    return CswElevationPointsParser;
+    return WcsElevationPointsParser;
 }(Parser));
 function hexToRgb(hex) {
     var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -3674,6 +3675,113 @@ function hexToRgb(hex) {
     } : null;
 }
 
+var WcsElevationSurfaceParser = (function (_super) {
+    __extends(WcsElevationSurfaceParser, _super);
+    function WcsElevationSurfaceParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    WcsElevationSurfaceParser.prototype.parse = function () {
+        var _this = this;
+        var loader = new Elevation.WcsXyzLoader(this.options);
+        return loader.load().then(function (res) {
+            var resolutionX = _this.options.resolutionX;
+            var resolutionY = res.length / resolutionX;
+            var geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
+            var bbox = _this.options.bbox;
+            geometry.vertices.forEach(function (vertice, i) {
+                var xyz = res[i];
+                var z = res[i].z;
+                vertice.z = z;
+                vertice.x = xyz.x;
+                vertice.y = xyz.y;
+            });
+            if (res.length) {
+                geometry.computeBoundingSphere();
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+            }
+            var material = new THREE.MeshPhongMaterial({ color: 0x0033ff, specular: 0x555555, shininess: 30 });
+            return new THREE.Mesh(geometry, material);
+        });
+    };
+    return WcsElevationSurfaceParser;
+}(Parser));
+
+var WcsCanvasSurfaceParser = (function (_super) {
+    __extends(WcsCanvasSurfaceParser, _super);
+    function WcsCanvasSurfaceParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    WcsCanvasSurfaceParser.prototype.parse = function () {
+        var _this = this;
+        var loader = new Elevation.WcsXyzLoader(this.options);
+        return loader.load().then(function (res) {
+            var resolutionX = _this.options.resolutionX;
+            var resolutionY = res.length / resolutionX;
+            var geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
+            var bbox = _this.options.bbox;
+            var mask = document.createElement("canvas");
+            mask.width = resolutionX;
+            mask.height = resolutionY;
+            var context = mask.getContext("2d");
+            var id = context.createImageData(1, 1);
+            var d = id.data;
+            // TODO: Some magic numbers. I need think about them. I think the gradient should stay the same.
+            var blue = new THREE.Lut("water", 5000);
+            var lut = new THREE.Lut("land", 2200);
+            blue.setMax(0);
+            blue.setMin(-5000);
+            lut.setMax(Math.floor(2200));
+            lut.setMin(Math.floor(0));
+            geometry.vertices.forEach(function (vertice, i) {
+                var xyz = res[i];
+                var z = res[i].z;
+                vertice.z = z;
+                vertice.x = xyz.x;
+                vertice.y = xyz.y;
+                if (z > 0) {
+                    var color = lut.getColor(z);
+                    drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+                }
+                else {
+                    var color = blue.getColor(z);
+                    drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+                }
+            });
+            if (res.length) {
+                geometry.computeBoundingSphere();
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+            }
+            var texture = new THREE.Texture(mask);
+            texture.needsUpdate = true;
+            var material = new THREE.MeshPhongMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0.7,
+                side: THREE.DoubleSide
+            });
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.userData = _this.options;
+            return mesh;
+            function drawPixel(x, y, r, g, b, a) {
+                d[0] = r;
+                d[1] = g;
+                d[2] = b;
+                d[3] = a;
+                context.putImageData(id, x, y);
+            }
+        });
+    };
+    return WcsCanvasSurfaceParser;
+}(Parser));
+
 var ElevationParser = (function (_super) {
     __extends(ElevationParser, _super);
     function ElevationParser(options) {
@@ -3683,7 +3791,13 @@ var ElevationParser = (function (_super) {
         return _this;
     }
     ElevationParser.prototype.parse = function (data) {
-        return new CswElevationPointsParser(this.options).parse();
+        if (this.options.surface) {
+            return new WcsElevationSurfaceParser(this.options).parse();
+        }
+        else if (this.options.wmsSurface) {
+            return new WcsCanvasSurfaceParser(this.options).parse();
+        }
+        return new WcsElevationPointsParser(this.options).parse();
     };
     return ElevationParser;
 }(Parser));
@@ -3854,7 +3968,7 @@ var TSurfToMesh = (function (_super) {
     };
     TSurfToMesh.prototype.processFaces = function (faces) {
         if (!this.geometry) {
-            this.dispatchEvent(new Event("error", "We have faces befor we have the header"));
+            this.dispatchEvent(new Event("error", "We have faces before we have the header"));
             this.destroy();
             return;
         }
@@ -3868,7 +3982,7 @@ var TSurfToMesh = (function (_super) {
     };
     TSurfToMesh.prototype.processVertices = function (vertices) {
         if (!this.geometry) {
-            this.dispatchEvent(new Event("error", "We have vertices befor we have the header"));
+            this.dispatchEvent(new Event("error", "We have vertices before we have the header"));
             this.destroy();
             return;
         }

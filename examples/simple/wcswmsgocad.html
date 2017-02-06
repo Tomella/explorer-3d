@@ -30,16 +30,13 @@
    <div id="target"></div>
    <div id="objectsList"></div>
 
-   <div id="helpPanel" class="open" style="height:330px; width: 400px">
+   <div id="helpPanel" class="open" style="height:320px; width: 320px">
       <span><strong>About</strong></span>
       <br/>
       <div class="helpText">
          <p>
-         This is using a HTTP loader instead of a file loader. Just a URL to a Gocad file either
-         in the same domain or on a domain that is CORS enabled. Here we are showing one of
-         each file type of vertices, lines and surface with the extension of <code>vs, pl</code> and
-         <code>ts</code> respectively.<br/>
-         <strong>Note:</strong> We exaggerated the elevation to give a sense of the change across the area.
+         Download a Gocad file over HTTP for the GAB base. It's in an EPSG:3112 projection so it is reprojected to EPSG:3857.
+         A point cloud representing surface elevation is constructed from a WCS, EPSG:3857 request and rendered along with the GAB data.
          </p>
          <strong>Navgation Keys</strong>
          <ul>
@@ -63,11 +60,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.15/proj4.js"></script>
 <!-- Make IE11 happy -->
 <script src="/dist/resources/es6-promise.js"></script>
+<script src="../bower_components/geotiffparser/js/GeotiffParser.js"></script>
 
 <!-- Our API's -->
 <script src="/dist/explorer3d.js"></script>
+<script src="../bower_components/elevation/dist/elevation.js"></script>
 
 <!-- Our example code -->
-<script src="js/http.js"></script>
+<script src="js/wcswmsgocad.js"></script>
 </body>
 </html>

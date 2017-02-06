@@ -58,7 +58,7 @@ export class TSurfToMesh extends Pipeline {
 
    private processFaces(faces) {
       if (!this.geometry) {
-         this.dispatchEvent(new Event("error", "We have faces befor we have the header"));
+         this.dispatchEvent(new Event("error", "We have faces before we have the header"));
          this.destroy();
          return;
       }
@@ -74,7 +74,7 @@ export class TSurfToMesh extends Pipeline {
 
    private processVertices(vertices) {
       if (!this.geometry) {
-         this.dispatchEvent(new Event("error", "We have vertices befor we have the header"));
+         this.dispatchEvent(new Event("error", "We have vertices before we have the header"));
          this.destroy();
          return;
       }
