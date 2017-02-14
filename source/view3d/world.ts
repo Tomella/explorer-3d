@@ -22,10 +22,10 @@ export class World {
       },
       lights: {
          ambient: {
-            color: 0x555555
+            color: 0x888888
          },
          directional: {
-            color: 0xa0a0a0,
+            color: 0x444444,
             center: {
                x: 0,
                y: 0,

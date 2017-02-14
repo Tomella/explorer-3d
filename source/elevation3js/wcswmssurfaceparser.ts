@@ -41,30 +41,15 @@ export class WcsWmsSurfaceParser extends Parser {
             .replace("${width}", 512)
             .replace("${height}", 512)
             .replace("${bbox}", bbox.join(","));
+
+         let opacity = this.options.opacity ? this.options.opacity : 1;
          let material = new THREE.MeshPhongMaterial({
             map: loader.load(url),
             transparent: true,
-            opacity: 0.7,
+            opacity: opacity,
             side: THREE.DoubleSide
          });
-
-         //
-         //            {
-         //            transparent: true,
-         //            opacity: this.options.opacity ? this.options.opacity : 0.6
-         //         });
-
          return new THREE.Mesh(geometry, material);
-         /**
-                  let mat = new THREE.PointsMaterial({
-                     vertexColors: THREE.VertexColors,
-                     size: 1
-                  });
-
-                  let points = new THREE.Points(pointGeo, mat);
-                  points.userData = this.options;
-                  return points;
-         */
       });
    }
 }

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <meta charset='UTF-8'>
+   <meta name="robots" content="noindex">
+   <title>Gocad API Usage Example</title>
+   <link href="http.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+   <div id="toolbar">
+      <span style="padding-top:6px" title="Set a multiplier of the z-value for the shown datasets">
+         Vertical Exaggeration:
+         <select id="exaggerate">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="4">4</option>
+            <option value="8">8</option>
+            <option value="16">16</option>
+            <option value="32">32</option>
+            <option value="64">64</option>
+            <option value="128">128</option>
+         </select>
+         <span style="border-left: 1px solid darkgray;padding-left: 7px" title='Show/hide the "North", "East" and "Elevation" labels'>
+            Labels on/off:
+            <input type="checkbox" id="labelSwitch" checked="checked">
+         </span>
+      </span>
+   </div>
+
+   <div id="target"></div>
+   <div id="objectsList"></div>
+
+   <div id="helpPanel" class="open" style="height:320px; width: 320px">
+      <span><strong>About</strong></span>
+      <br/>
+      <div class="helpText">
+         <p>
+         Download a Gocad file over HTTP for the GAB base. It's in an EPSG:3112 projection so it is reprojected to EPSG:3857.
+         A point cloud representing surface elevation is constructed from a WCS, EPSG:3857 request and rendered along with the GAB data.
+         </p>
+         <strong>Navgation Keys</strong>
+         <ul>
+            <li>A - Rotate anticlockwise</li>
+            <li>D - Rotate clockwise</li>
+            <li>W - Zoom in (also left mouse button)</li>
+            <li>S - Zoom out (also right mouse button)</li>
+            <li>R - Tilt towards</li>
+            <li>F - Tilt away</li>
+         </ul>
+      </div>
+   </div>
+
+   <div id="mask"></div>
+   <div id="noWebGl">
+      <strong>Are you joking?</strong> <br/>
+      That is some old browser you are using. Don't come back until you upgrade to a 3D capable browser.
+   </div>
+<!-- Stuff we didn't write-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.15/proj4.js"></script>
+<!-- Make IE11 happy -->
+<script src="/dist/resources/es6-promise.js"></script>
+<script src="../bower_components/geotiffparser/js/GeotiffParser.js"></script>
+
+<!-- Our API's -->
+<script src="/dist/explorer3d.js"></script>
+<script src="../bower_components/elevation/dist/elevation.js"></script>
+
+<!-- Our example code -->
+<script src="js/australia.js"></script>
+</body>
+</html>

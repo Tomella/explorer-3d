@@ -54,10 +54,12 @@ export class WcsCanvasSurfaceParser extends Parser {
 
          let texture = new THREE.Texture(mask);
          texture.needsUpdate = true;
+
+         let opacity = this.options.opacity ? this.options.opacity : 1;
          let material = new THREE.MeshPhongMaterial({
             map: texture,
             transparent: true,
-            opacity: 0.7,
+            opacity: opacity,
             side: THREE.DoubleSide
          });
          let mesh = new THREE.Mesh(geometry, material);

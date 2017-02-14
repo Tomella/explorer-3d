@@ -2989,10 +2989,10 @@ var World = (function () {
             },
             lights: {
                 ambient: {
-                    color: 0x555555
+                    color: 0x888888
                 },
                 directional: {
-                    color: 0xa0a0a0,
+                    color: 0x444444,
                     center: {
                         x: 0,
                         y: 0,
@@ -3761,10 +3761,11 @@ var WcsCanvasSurfaceParser = (function (_super) {
             }
             var texture = new THREE.Texture(mask);
             texture.needsUpdate = true;
+            var opacity = _this.options.opacity ? _this.options.opacity : 1;
             var material = new THREE.MeshPhongMaterial({
                 map: texture,
                 transparent: true,
-                opacity: 0.7,
+                opacity: opacity,
                 side: THREE.DoubleSide
             });
             var mesh = new THREE.Mesh(geometry, material);
@@ -3800,6 +3801,80 @@ var ElevationParser = (function (_super) {
         return new WcsElevationPointsParser(this.options).parse();
     };
     return ElevationParser;
+}(Parser));
+
+var EsriImageryLoader = (function () {
+    function EsriImageryLoader(options) {
+        this.options = options;
+    }
+    EsriImageryLoader.prototype.load = function () {
+        var url = this.options.esriTemplate
+            .replace("${bbox}", this.options.bbox)
+            .replace("${size}", this.options.resolutionX + "," + this.options.resolutionY);
+        var loader = new Elevation.HttpTextLoader(url, this.options);
+        // Get the ESRI Metadata.
+        return loader.load().then(function (text) { return JSON.parse(text); });
+    };
+    return EsriImageryLoader;
+}());
+
+var WcsEsriImageryParser = (function (_super) {
+    __extends(WcsEsriImageryParser, _super);
+    function WcsEsriImageryParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    WcsEsriImageryParser.prototype.parse = function () {
+        var _this = this;
+        var options = Object.assign({}, this.options, { resolutionX: this.options.imageWidth, resolutionY: this.options.imageHeight });
+        return new EsriImageryLoader(options).load().then(function (esriData) {
+            // Get the extent returned by ESRI
+            var extent = esriData.extent;
+            var bbox = [
+                extent.xmin,
+                extent.ymin,
+                extent.xmax,
+                extent.ymax
+            ];
+            // Merge the options
+            var options = Object.assign({}, _this.options, { bbox: bbox });
+            var restLoader = new Elevation.WcsXyzLoader(options);
+            return restLoader.load().then(function (res) {
+                var resolutionX = _this.options.resolutionX;
+                var resolutionY = res.length / resolutionX;
+                var geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
+                var bbox = _this.options.bbox;
+                geometry.vertices.forEach(function (vertice, i) {
+                    var xyz = res[i];
+                    var z = res[i].z;
+                    vertice.z = z;
+                    vertice.x = xyz.x;
+                    vertice.y = xyz.y;
+                });
+                if (res.length) {
+                    geometry.computeBoundingSphere();
+                    geometry.computeFaceNormals();
+                    geometry.computeVertexNormals();
+                }
+                var loader = new THREE.TextureLoader();
+                loader.crossOrigin = "";
+                var url = esriData.href;
+                var opacity = _this.options.opacity ? _this.options.opacity : 1;
+                var material = new THREE.MeshPhongMaterial({
+                    map: loader.load(url),
+                    transparent: true,
+                    opacity: opacity,
+                    side: THREE.DoubleSide
+                });
+                var mesh = new THREE.Mesh(geometry, material);
+                mesh.userData = _this.options;
+                return mesh;
+            });
+        });
+    };
+    return WcsEsriImageryParser;
 }(Parser));
 
 var Pipeline = (function (_super) {
@@ -4413,6 +4488,7 @@ exports.VerticalExaggerate = VerticalExaggerate;
 exports.FileDrop = FileDrop;
 exports.Parser = Parser;
 exports.ElevationParser = ElevationParser;
+exports.WcsEsriImageryParser = WcsEsriImageryParser;
 exports.GocadPusherParser = GocadPusherParser;
 exports.HttpGocadPusherParser = HttpGocadPusherParser;
 exports.LocalGocadPusherParser = LocalGocadPusherParser;

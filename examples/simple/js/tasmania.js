@@ -148,30 +148,23 @@
 
    // Fire off three requests, wait for their promises to resolve then add some vertical exaggeration.
    Promise.all([
-      { // Make it a common projection, same as Google
-         type: "gocad",
-         url: path + "3DVIS_LAYER10_BASE_ASSESSMENT.ts",
-         options: {
-            from: "EPSG:3112",
-            to: "EPSG:3857"
-         }
-      },
       { // We are using meters as it auto scales better ('cause the auto scaling works on a sphere and the z values are meters)
          type: "wcswms",
          header: {
-            name: "Elevation Over GAB",
+            name: "Elevation over Tasmania",
          },
          template: "http://services.ga.gov.au/site_9/services/DEM_SRTM_1Second_over_Bathymetry_Topography/MapServer/WCSServer?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&coverage=1&CRS=EPSG:3857&BBOX=${bbox}&FORMAT=GeoTIFF&RESX=${resx}&RESY=${resy}&RESPONSE_CRS=EPSG:3857&HEIGHT=${height}&WIDTH=${width}",
          imageryTemplate: "http://maps.six.nsw.gov.au/arcgis/services/public/NSW_Imagery/MapServer/WMSServer?" +
                      "LAYERS=BestImageryDates" +
                      "&TRANSPARENT=TRUE&SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&STYLES=&FORMAT=image%2Fpng" +
-                     "&SRS=EPSG%3A3857" +
+                     "&SRS=EPSG%3A3112" +
                      "&BBOX=${bbox}" +
                      "&WIDTH=${width}&HEIGHT=${height}",
-         bbox: [14500000, -4000000, 17100000, -930000],
-         resolutionX: 300,
+        // bbox: [14500000, -4000000, 17100000, -930000],
+         bbox: [16000000, -5500000, 16600000, -4800000],
+         resolutionX: 700,
          wmsSurface: true,
-         opacity: 0.6,
+         opacity: 1,
          extent: new Elevation.Extent2d(1000000, -10000000, 20000000, -899000),
       }].map(function(metadata) { return run(metadata) })).then(function() {
       // Make it look prettier.

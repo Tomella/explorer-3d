@@ -14,6 +14,7 @@
     "elevation": "git@github.com:Tomella/elevation.git",
     "geotiffparser": "git@github.com:xlhomme/GeotiffParser.js.git",
     "proj4": "~2.3.15",
+    "x2js": "x2js#^1.2.0",
     "three.js": "*"
   },
   "ignore": [
