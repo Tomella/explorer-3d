@@ -4,39 +4,39 @@
 	<title>3D Viewer Examples</title>
 </head>
    <ul>
-      <li><a href="simple/australia.html"><strong>Australia elevation gradient</strong></a>Use WCS and a couple of lookup tables to create a heatmap of australian elevation.</li>
-      <li><a href="simple/victoria.html"><strong>Victoria elevation gradient</strong></a> Same as above except this is Victoria.</li>
-      <li><a href="simple/nsw.html"><strong>NSW elevation gradient</strong></a> Same as above except this is NSW.</li>
-      <li><a href="simple/penguin.html"><strong>GOCAD Viewer</strong></a>
+      <li><a target="explorer3d" href="simple/australia.html"><strong>Australia elevation gradient</strong></a>Use WCS and a couple of lookup tables to create a heatmap of australian elevation.</li>
+      <li><a target="explorer3d" href="simple/victoria.html"><strong>Victoria elevation gradient</strong></a> Same as above except this is Victoria.</li>
+      <li><a target="explorer3d" href="simple/nsw.html"><strong>NSW elevation gradient</strong></a> Same as above except this is NSW.</li>
+      <li><a target="explorer3d" href="simple/penguin.html"><strong>Penguin elevation gradient</strong></a>
             Same as above but now showing
-            <a href="https://www.google.com.au/maps/place/Penguin+TAS+7316/@-41.1392376,146.0279581,13z/data=!3m1!4b1!4m5!3m4!1s0xaa7bc7ad92d905cd:0x403c94dd0ddf250!8m2!3d-41.1166073!4d146.0707855">Penguin</a>
+            <a target="explorer3d" href="https://www.google.com.au/maps/place/Penguin+TAS+7316/@-41.1392376,146.0279581,13z/data=!3m1!4b1!4m5!3m4!1s0xaa7bc7ad92d905cd:0x403c94dd0ddf250!8m2!3d-41.1166073!4d146.0707855">Penguin</a>
             only because I like the look of it.
       </li>
-      <li><a href="simple/tasmania.html"><strong>Tasmania elevation gradient</strong></a> Same as above except this is Tasmania with exagerated elevation.</li>
+      <li><a target="explorer3d" href="simple/tasmania.html"><strong>Tasmania elevation gradient</strong></a> Same as above except this is Tasmania with exagerated elevation.</li>
 
-      <li><a href="simple/combined.html"><strong>GOCAD and WCS combined</strong></a> Shows the GAB layer from a GOCAD file overlayed with a grid of points from WCS Elevation.
+      <li><a target="explorer3d" href="simple/combined.html"><strong>GOCAD and WCS combined</strong></a> Shows the GAB layer from a GOCAD file overlayed with a grid of points from WCS Elevation.
                                                 Elevation lookup table are used to color the points of the grid while the color of the GAB is in the GOCAD file.</li>
-      <li><a href="simple/combinesurface.html"><strong>Combine GOCAD and WCS GeoTIFF in two different projections</strong></a>Shows the GAB layer from a GOCAD
+      <li><a target="explorer3d" href="simple/combinesurface.html"><strong>Combine GOCAD and WCS GeoTIFF in two different projections</strong></a>Shows the GAB layer from a GOCAD
                                                 file overlayed with a surface made from a WCS GeoTIFF.</li>
 
-      <li><a href="simple/http.html"><strong>GOCAD Viewer</strong></a> An example of viewing GOCAD links stored on the web using the API.</li>
-      <li><a href="simple/index.html"><strong>GOCAD Viewer</strong></a> An example of viewing GOCAD files. Drag and drop local file(s) onto the viewer. Haven't got any files?
+      <li><a target="explorer3d" href="simple/http.html"><strong>GOCAD Viewer</strong></a> An example of viewing GOCAD links stored on the web using the API.</li>
+      <li><a target="explorer3d" href="simple/index.html"><strong>GOCAD Viewer</strong></a> An example of viewing GOCAD files. Drag and drop local file(s) onto the viewer. Haven't got any files?
                                                 Save these three examples to your computer and drag them either as a group or individually to view the behaviour.
          <ul>
-            <li><a href="data/sample.pl">Some lines</a></li>
-            <li><a href="data/sample.ts">A surface</a></li>
-            <li><a href="data/sample.pl">Some points</a></li>
+            <li><a target="explorer3d" href="data/sample.pl">Some lines</a></li>
+            <li><a target="explorer3d" href="data/sample.ts">A surface</a></li>
+            <li><a target="explorer3d" href="data/sample.pl">Some points</a></li>
          </ul>
       </li>
 
-      <li><a href="simple/osm.html"><strong>OSM viewer</strong></a> <strong>WORK IN PROGRESS</strong> Nothing to see yet (it all happens in the console, out of sight)
+      <li><a target="explorer3d" href="simple/osm.html"><strong>OSM viewer</strong></a> <strong>WORK IN PROGRESS</strong> Nothing to see yet (it all happens in the console, out of sight)
                                                 This reads the OpenStreetMap data via their public API, converts it to GeoJSON and merges elevation data from WCS so that the
                                                 features (roads, tracks and landmarks) can be overlayed on a 3D view.</li>
-      <li><a href="simple/victoriaimage.html"><strong>WCS and ESRI ArcGIS imagery</strong></a>Takes a template for ArcGIS imagery, constructs the image and uses the data that
+      <li><a target="explorer3d" href="simple/victoriaimage.html"><strong>WCS and ESRI ArcGIS imagery</strong></a>Takes a template for ArcGIS imagery, constructs the image and uses the data that
                                                 ArcGIS returns to find the elevation data to overlay. So its a multi step process that leverages off ArcGIS calculations.</li>
-      <li><a href="simple/wcswmsgocad.html"><strong>WCS elevation gradient combined with GOCAD file</strong></a>This has many facets:
+      <li><a target="explorer3d" href="simple/wcswmsgocad.html"><strong>WCS elevation gradient combined with GOCAD file</strong></a>This has many facets:
          <ul>
-            <li>Loads a GOCAD file in EPSG:3112 projection over the <a href="http://www.ga.gov.au/metadata-gateway/metadata/record/gcat_db7a5b2e-dbf4-2624-e044-00144fdd4fa6/Layer+10+Great+Artesian+Basin+base+of+Jurassic-Cretaceous+sequence+surface">GAB</a></li>
+            <li>Loads a GOCAD file in EPSG:3112 projection over the <a target="explorer3d" href="http://www.ga.gov.au/metadata-gateway/metadata/record/gcat_db7a5b2e-dbf4-2624-e044-00144fdd4fa6/Layer+10+Great+Artesian+Basin+base+of+Jurassic-Cretaceous+sequence+surface">GAB</a></li>
             <li>Loads a GeoTIFF over WCS in EPSG:3857 and creates a heatmap surface</li>
             <li>Mixed projections again</li>
          </ul>
