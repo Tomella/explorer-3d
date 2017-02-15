@@ -29,8 +29,11 @@ export class WcsElevationSurfaceParser extends Parser {
             geometry.computeVertexNormals();
          }
 
-         let material = new THREE.MeshPhongMaterial({ color: 0x0033ff, specular: 0x555555, shininess: 30 });
-         return new THREE.Mesh(geometry, material);
+         let opacity = this.options.opacity ? this.options.opacity : 1;
+         let material = new THREE.MeshPhongMaterial({ color: 0x0033ff, specular: 0x555555, shininess: 30, opacity: opacity, transparent: true });
+         let mesh = new THREE.Mesh(geometry, material);
+         mesh.userData = this.options;
+         return mesh;
       });
    }
 }

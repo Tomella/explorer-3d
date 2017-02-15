@@ -138,7 +138,7 @@
       { // We are using meters as it auto scales better ('cause the auto scaling works on a sphere and the z values are meters)
          type: "esriElevation",
          header: {
-            name: "Elevation over Arthurs Seat",
+            name: "Imagery over Victoria",
          },
          template: "http://services.ga.gov.au/site_9/services/DEM_SRTM_1Second_over_Bathymetry_Topography/MapServer/WCSServer?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage" +
                   "&coverage=1&CRS=EPSG:3857&BBOX=${bbox}&FORMAT=GeoTIFF&RESX=${resx}&RESY=${resy}&RESPONSE_CRS=EPSG:3857&HEIGHT=${height}&WIDTH=${width}",

@@ -159,11 +159,12 @@
       { // We are using meters as it auto scales better ('cause the auto scaling works on a sphere and the z values are meters)
          type: "elevation",
          header: {
-            name: "Surface points",
+            name: "Elevation surface",
          },
          template: "http://services.ga.gov.au/site_9/services/DEM_SRTM_1Second_over_Bathymetry_Topography/MapServer/WCSServer?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&coverage=1&CRS=EPSG:3857&BBOX=${bbox}&FORMAT=GeoTIFF&RESX=${resx}&RESY=${resy}&RESPONSE_CRS=EPSG:3857&HEIGHT=${height}&WIDTH=${width}",
          bbox: [14650000, -3950000, 17100000, -899000],
          resolutionX: 200,
+         opacity: 0.7,
          surface: true,
          extent: new Elevation.Extent2d(1000000, -10000000, 20000000, -899000),
       }].map(function(metadata) { return run(metadata) })).then(function() {

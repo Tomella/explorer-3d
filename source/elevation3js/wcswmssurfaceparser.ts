@@ -16,11 +16,6 @@ export class WcsWmsSurfaceParser extends Parser {
          let bbox = this.options.bbox;
 
          let rgb = hexToRgb(this.options.color ? this.options.color : "#bbbbff");
-         let blue = new THREE.Color().setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-         let lut = new THREE.Lut("land", 2200);
-         lut.setMax(Math.floor(2200));
-         lut.setMin(Math.floor(0));
-
 
          geometry.vertices.forEach((vertice, i) => {
             let xyz = res[i];

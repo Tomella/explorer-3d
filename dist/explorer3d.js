@@ -3703,8 +3703,11 @@ var WcsElevationSurfaceParser = (function (_super) {
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
             }
-            var material = new THREE.MeshPhongMaterial({ color: 0x0033ff, specular: 0x555555, shininess: 30 });
-            return new THREE.Mesh(geometry, material);
+            var opacity = _this.options.opacity ? _this.options.opacity : 1;
+            var material = new THREE.MeshPhongMaterial({ color: 0x0033ff, specular: 0x555555, shininess: 30, opacity: opacity, transparent: true });
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.userData = _this.options;
+            return mesh;
         });
     };
     return WcsElevationSurfaceParser;

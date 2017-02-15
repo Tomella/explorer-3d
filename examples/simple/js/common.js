@@ -1,76 +1,4 @@
 (function (global, Explorer3d) {
-   /*
-    * Set up some settings. Just configuration and data.
-    */
-   var appOptions = {
-      workerCount: 3,
-      browser: "modern",
-      hasWebGl: webgl(),
-      logLevel: Explorer3d.Logger.LOG_ALL // LOG_NOTHING, LOG_ERROR, LOG_WARN, LOG_INFO, LOG_ALL. It logs nothing by default.
-   };
-
-   var refData = {
-      preWebGlMessage: "Your browser is not capable of rendering 3D.\n" +
-         "Try a newer browser like the latest Firefox, Edge or Chrome\n" +
-         "from Mozilla, Microsoft or Google respectively.",
-      ie11Warning: "Your browser is a bit old to handle big files.\n" +
-         "The latest Firefox or Edge is the best for large files.\n" +
-         "Chrome is OK but struggles earlier than Firefox or Edge."
-   };
-
-   if(navigator.userAgent && navigator.userAgent.indexOf("Trident/") > 0) {
-      appOptions.browser = "ie11";
-   }
-
-   // Keep all the DOM stuff together. Make the abstraction to the HTML here
-   var dom = {
-      verticalExaggeration: document.getElementById("exaggerate"),
-      selfDestruct: document.getElementById("selfDestruct"),
-      labelSwitch: document.getElementById("labelSwitch"),
-      objectsList: document.getElementById("objectsList"),
-      target: document.getElementById("target"),
-      noWebGl: document.getElementById("noWebGl"),
-      files: document.getElementsByClassName("gocadLinks"),
-      body: document.body
-   };
-
-   // What are they even trying for? No dinosaurs allowed.
-   if (!appOptions.hasWebGl) {
-      dom.body.className = "disable";
-      return;
-   }
-
-/******************************************************************
- * Here is the calling of the API.
- ****************************************************************** */
-   Explorer3d.Logger.level = appOptions.logLevel;
-   // Explorer3d.Logger.log("ALL");
-   // Explorer3d.Logger.info("INFO");
-   // Explorer3d.Logger.warn("WARN");
-   // Explorer3d.Logger.error("ERROR");
-
-   // Grab ourselves a world factory
-   var factory = new Explorer3d.DefaultWorldFactory(dom.target);
-
-   // Where are my workers? Just above here in this case. We have mapped the dependency in /dist. It's base is relative to the HTML page.
-   Explorer3d.Parser.codeBase = "../dist";
-
-   // You could lazy load these. I nearly did. I would if it was part of a bigger app.
-   let gocadParser = new Explorer3d.HttpGocadPusherParser(appOptions);
-
-
-   // Proxy the parser(s) and throttle the threads.  You can bypass this for unbounded threads.
-   // Depending how many cores you have will determine actual usage. With 8 cores the bottle neck will be
-   // the UI thread. That would be 7 threads funneling into 1.
-   gocadParser = new Explorer3d.ThrottleProxyParser(gocadParser, appOptions.workerCount);
-
-
-   /********************************************************
-    * End of calling the API. Now the UI.
-    * This is just plain old HTML with no framework.
-    * There are some UI helper calls provided by the API.
-    ******************************************************** */
-
    /**
     * Some UI to keep the users happy
     */
@@ -148,10 +76,18 @@
 
    // Fire off three requests, wait for their promises to resolve then add some vertical exaggeration.
    Promise.all([
+      { // Make it a common projection, same as Google
+         type: "gocad1",
+         url: path + "3DVIS_LAYER10_BASE_ASSESSMENT.ts",
+         options: {
+            from: "EPSG:3112",
+            to: "EPSG:3857"
+         }
+      },
       { // We are using meters as it auto scales better ('cause the auto scaling works on a sphere and the z values are meters)
          type: "wcswms",
          header: {
-            name: "Elevation over Tasmania",
+            name: "Elevation over Australia",
          },
          template: "http://services.ga.gov.au/site_9/services/DEM_SRTM_1Second_over_Bathymetry_Topography/MapServer/WCSServer?SERVICE=WCS&VERSION=1.0.0&REQUEST=GetCoverage&coverage=1&CRS=EPSG:3857&BBOX=${bbox}&FORMAT=GeoTIFF&RESX=${resx}&RESY=${resy}&RESPONSE_CRS=EPSG:3857&HEIGHT=${height}&WIDTH=${width}",
          imageryTemplate: "http://maps.six.nsw.gov.au/arcgis/services/public/NSW_Imagery/MapServer/WMSServer?" +
@@ -161,14 +97,14 @@
                      "&BBOX=${bbox}" +
                      "&WIDTH=${width}&HEIGHT=${height}",
         // bbox: [14500000, -4000000, 17100000, -930000],
-         bbox: [16000000, -5500000, 16600000, -4800000],
+         bbox: [12100000, -5600000, 17300000, -980000],
          resolutionX: 700,
          wmsSurface: true,
          opacity: 1,
          extent: new Elevation.Extent2d(1000000, -10000000, 20000000, -899000),
       }].map(function(metadata) { return run(metadata) })).then(function() {
       // Make it look prettier.
-      verticalExaggerate.set(dom.verticalExaggeration.value = 32);
+      verticalExaggerate.set(dom.verticalExaggeration.value = 64);
    });
 
    function run(metadata) {

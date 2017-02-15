@@ -168,7 +168,7 @@
          extent: new Elevation.Extent2d(1000000, -10000000, 20000000, -899000),
       }].map(function(metadata) { return run(metadata) })).then(function() {
       // Make it look prettier.
-      verticalExaggerate.set(dom.verticalExaggeration.value = 2);
+      verticalExaggerate.set(dom.verticalExaggeration.value = 16);
    });
 
    function run(metadata) {
