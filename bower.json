@@ -5,9 +5,7 @@
   "homepage": "https://github.com/Tomella/explorer-3d",
   "main": [
      "dist/explorer3d.js",
-     "dist/explorer3d.min.js",
      "dist/libs.js",
-     "dist/libs.min.js",
      "dist/workers/gocadhttppusher.js",
      "dist/workers/gocadpusher.js"
   ],
