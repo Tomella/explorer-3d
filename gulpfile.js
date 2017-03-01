@@ -11,12 +11,29 @@ var runSequence      = require('run-sequence');
 var source           = require('vinyl-source-stream');
 var sourcemaps       = require('gulp-sourcemaps');
 var ts               = require('typescript');
+var gulpTs           = require('gulp-typescript');
 var tslint           = require("gulp-tslint");
 var uglify           = require('gulp-uglify');
 
 
 var ASSETS_BASE = "dist";
 var RESOURCES_BASE = 'dist/resources';
+
+gulp.task('definitions', ['buildDefinitions'], function() {
+   return gulp.src('./dist/definitions/**/*.ts')
+    .pipe(concat('index.d.ts'))
+    .pipe(gulp.dest('./dist/'));
+});
+
+gulp.task('buildDefinitions', function() {
+    var tsResult = gulp.src('source/**/*.ts')
+        .pipe(gulpTs({
+         "target": "es6",
+         "declaration": true
+    }));
+
+    return tsResult.dts.pipe(gulp.dest('dist/definitions'));
+});
 
 gulp.task('workers', function () {
    return gulp.src('./source/workers/*.js')

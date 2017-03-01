@@ -1,4 +1,5 @@
 import { Parser } from "../parser/parser";
+import { ElevationMaterial } from "../material/elevationmaterial";
 declare var Elevation: any;
 
 export class WcsCanvasSurfaceParser extends Parser {
@@ -15,35 +16,12 @@ export class WcsCanvasSurfaceParser extends Parser {
          let geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
          let bbox = this.options.bbox;
 
-         let mask = document.createElement("canvas");
-         mask.width = resolutionX;
-         mask.height = resolutionY;
-         let context = mask.getContext("2d");
-         let id = context.createImageData(1, 1);
-         let d  = id.data;
-
-         // TODO: Some magic numbers. I need think about them. I think the gradient should stay the same.
-         let blue = new THREE.Lut("water", 5000);
-         let lut  = new THREE.Lut("land", 2200);
-         blue.setMax(0);
-         blue.setMin(-5000);
-         lut.setMax(Math.floor(2200));
-         lut.setMin(Math.floor(0));
-
          geometry.vertices.forEach((vertice, i) => {
             let xyz = res[i];
             let z = res[i].z;
             vertice.z = z;
             vertice.x = xyz.x;
             vertice.y = xyz.y;
-
-            if (z > 0) {
-               let color = lut.getColor(z);
-               drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-            } else {
-               let color = blue.getColor(z);
-               drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-            }
          });
 
          if (res.length) {
@@ -52,12 +30,11 @@ export class WcsCanvasSurfaceParser extends Parser {
             geometry.computeVertexNormals();
          }
 
-         let texture = new THREE.Texture(mask);
-         texture.needsUpdate = true;
-
          let opacity = this.options.opacity ? this.options.opacity : 1;
-         let material = new THREE.MeshPhongMaterial({
-            map: texture,
+         let material = new ElevationMaterial({
+            resolutionX: resolutionX,
+            resolutionY: resolutionY,
+            data: geometry.vertices,
             transparent: true,
             opacity: opacity,
             side: THREE.DoubleSide
@@ -66,14 +43,6 @@ export class WcsCanvasSurfaceParser extends Parser {
 
          mesh.userData = this.options;
          return mesh;
-
-         function drawPixel(x, y, r, g, b, a) {
-            d[0]   = r;
-            d[1]   = g;
-            d[2]   = b;
-            d[3]   = a;
-            context.putImageData( id, x, y );
-         }
       });
    }
 }

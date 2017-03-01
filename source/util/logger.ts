@@ -26,10 +26,10 @@ export class Logger {
       }
 
       if (Logger._broken) {
-         Logger.log = num >= 64 ? function() { console.log(...arguments); } : Logger.noop;
-         Logger.info = num >= 32 ? function() { console.info(...arguments); } : Logger.noop;
-         Logger.warn = num >= 16 ? function() { console.warn(...arguments); } : Logger.noop;
-         Logger.log = num >= 8 ? function() { console.log(...arguments); } : Logger.noop;
+         Logger.log = num >= 64 ? function(main) { console.log(main); } : Logger.noop;
+         Logger.info = num >= 32 ? function(main) { console.info(main); } : Logger.noop;
+         Logger.warn = num >= 16 ? function(main) { console.warn(main); } : Logger.noop;
+         Logger.log = num >= 8 ? function(main) { console.log(main); } : Logger.noop;
       } else {
          // We get to keep line numbers if we do it this way.
          Logger.log = num >= 64 ? console.log : Logger.noop;

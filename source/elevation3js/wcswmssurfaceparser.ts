@@ -33,8 +33,8 @@ export class WcsWmsSurfaceParser extends Parser {
          let loader = new THREE.TextureLoader();
          loader.crossOrigin = "";
          let url = this.options.imageryTemplate
-            .replace("${width}", 512)
-            .replace("${height}", 512)
+            .replace("${width}", this.options.imageWidth ? this.options.imageWidth : 512)
+            .replace("${height}", this.options.imageHeight ? this.options.imageHeight : 512)
             .replace("${bbox}", bbox.join(","));
 
          let opacity = this.options.opacity ? this.options.opacity : 1;

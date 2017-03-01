@@ -14,7 +14,7 @@ enum State {
 };
 
 export class PipeToThreedObj extends Pipeline {
-   state: State;
+   state: any;
    next: Pipeline;
 
    constructor() {

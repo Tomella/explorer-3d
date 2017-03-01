@@ -14,3 +14,5 @@ export { GocadPusherParser }  from "./parser/gocadpusher";
 export { HttpGocadPusherParser }  from "./parser/httpgocadpusher";
 export { LocalGocadPusherParser }  from "./parser/localgocadpusher";
 export { ThrottleProxyParser }  from "./parser/throttleproxyparser";
+
+export { ElevationMaterial }  from "./material/elevationmaterial";

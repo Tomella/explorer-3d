@@ -1726,10 +1726,10 @@ var Logger = (function () {
                 }
             }
             if (Logger._broken) {
-                Logger.log = num >= 64 ? function () { console.log.apply(console, arguments); } : Logger.noop;
-                Logger.info = num >= 32 ? function () { console.info.apply(console, arguments); } : Logger.noop;
-                Logger.warn = num >= 16 ? function () { console.warn.apply(console, arguments); } : Logger.noop;
-                Logger.log = num >= 8 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+                Logger.log = num >= 64 ? function (main) { console.log(main); } : Logger.noop;
+                Logger.info = num >= 32 ? function (main) { console.info(main); } : Logger.noop;
+                Logger.warn = num >= 16 ? function (main) { console.warn(main); } : Logger.noop;
+                Logger.log = num >= 8 ? function (main) { console.log(main); } : Logger.noop;
             }
             else {
                 // We get to keep line numbers if we do it this way.
@@ -3612,14 +3612,16 @@ var FileDrop = (function () {
     return FileDrop;
 }());
 
-var Parser = (function () {
+var Parser = (function (_super) {
+    __extends(Parser, _super);
     function Parser() {
+        return _super !== null && _super.apply(this, arguments) || this;
     }
     Parser.prototype.getWorkersBase = function () {
         return Parser.codeBase + "/workers/";
     };
     return Parser;
-}());
+}(EventDispatcher));
 Parser.codeBase = "";
 
 var WcsElevationPointsParser = (function (_super) {
@@ -3713,6 +3715,72 @@ var WcsElevationSurfaceParser = (function (_super) {
     return WcsElevationSurfaceParser;
 }(Parser));
 
+var ElevationMaterial = (function (_super) {
+    __extends(ElevationMaterial, _super);
+    /**
+     * Options:
+     *    mandatory:
+     *       resolutionX
+     *       resolutionY
+     *       data          // Single dimension array of z values
+ 
+     *    optional:
+     *       maxDepth     // Used to scale water, default 5000m (positive depth)
+     *       maxElevation // Used to scale elevation, default 2200m
+     */
+    function ElevationMaterial(options) {
+        var _this = _super.call(this, options) || this;
+        _this.options = options;
+        var res = options.data;
+        var mask = document.createElement("canvas");
+        var resolutionX = mask.width = options.resolutionX;
+        var resolutionY = mask.height = options.resolutionY;
+        var context = mask.getContext("2d");
+        var id = context.createImageData(1, 1);
+        var d = id.data;
+        // TODO: Some magic numbers. I need think about them. I think the gradient should stay the same.
+        var maxDepth = options.maxDepth ? options.maxDepth : ElevationMaterial.DEFAULT_MAX_DEPTH;
+        var maxElevation = options.maxElevation ? options.maxElevation : ElevationMaterial.DEFAULT_MAX_ELEVATION;
+        var blue = new THREE.Lut("water", maxDepth);
+        var lut = new THREE.Lut("land", maxElevation);
+        blue.setMax(0);
+        blue.setMin(-maxDepth);
+        lut.setMax(Math.floor(maxElevation));
+        lut.setMin(0);
+        res.forEach(function (item, i) {
+            var z = item.z;
+            if (z > 0) {
+                var color = lut.getColor(z);
+                drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+            }
+            else {
+                var color = blue.getColor(z);
+                drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+            }
+        });
+        var texture = new THREE.Texture(mask);
+        texture.needsUpdate = true;
+        var opacity = options.opacity ? options.opacity : 1;
+        _this.setValues({
+            map: texture,
+            transparent: true,
+            opacity: opacity,
+            side: THREE.DoubleSide
+        });
+        function drawPixel(x, y, r, g, b, a) {
+            d[0] = r;
+            d[1] = g;
+            d[2] = b;
+            d[3] = a;
+            context.putImageData(id, x, y);
+        }
+        return _this;
+    }
+    return ElevationMaterial;
+}(THREE.MeshPhongMaterial));
+ElevationMaterial.DEFAULT_MAX_DEPTH = 5000;
+ElevationMaterial.DEFAULT_MAX_ELEVATION = 2200;
+
 var WcsCanvasSurfaceParser = (function (_super) {
     __extends(WcsCanvasSurfaceParser, _super);
     function WcsCanvasSurfaceParser(options) {
@@ -3729,44 +3797,23 @@ var WcsCanvasSurfaceParser = (function (_super) {
             var resolutionY = res.length / resolutionX;
             var geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
             var bbox = _this.options.bbox;
-            var mask = document.createElement("canvas");
-            mask.width = resolutionX;
-            mask.height = resolutionY;
-            var context = mask.getContext("2d");
-            var id = context.createImageData(1, 1);
-            var d = id.data;
-            // TODO: Some magic numbers. I need think about them. I think the gradient should stay the same.
-            var blue = new THREE.Lut("water", 5000);
-            var lut = new THREE.Lut("land", 2200);
-            blue.setMax(0);
-            blue.setMin(-5000);
-            lut.setMax(Math.floor(2200));
-            lut.setMin(Math.floor(0));
             geometry.vertices.forEach(function (vertice, i) {
                 var xyz = res[i];
                 var z = res[i].z;
                 vertice.z = z;
                 vertice.x = xyz.x;
                 vertice.y = xyz.y;
-                if (z > 0) {
-                    var color = lut.getColor(z);
-                    drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-                }
-                else {
-                    var color = blue.getColor(z);
-                    drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-                }
             });
             if (res.length) {
                 geometry.computeBoundingSphere();
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
             }
-            var texture = new THREE.Texture(mask);
-            texture.needsUpdate = true;
             var opacity = _this.options.opacity ? _this.options.opacity : 1;
-            var material = new THREE.MeshPhongMaterial({
-                map: texture,
+            var material = new ElevationMaterial({
+                resolutionX: resolutionX,
+                resolutionY: resolutionY,
+                data: geometry.vertices,
                 transparent: true,
                 opacity: opacity,
                 side: THREE.DoubleSide
@@ -3774,13 +3821,6 @@ var WcsCanvasSurfaceParser = (function (_super) {
             var mesh = new THREE.Mesh(geometry, material);
             mesh.userData = _this.options;
             return mesh;
-            function drawPixel(x, y, r, g, b, a) {
-                d[0] = r;
-                d[1] = g;
-                d[2] = b;
-                d[3] = a;
-                context.putImageData(id, x, y);
-            }
         });
     };
     return WcsCanvasSurfaceParser;
@@ -3841,6 +3881,10 @@ var WcsEsriImageryParser = (function (_super) {
                 extent.xmax,
                 extent.ymax
             ];
+            _this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT, {
+                bbox: bbox,
+                aspectRatio: esriData.width / esriData.height
+            }));
             // Merge the options
             var options = Object.assign({}, _this.options, { bbox: bbox });
             var restLoader = new Elevation.WcsXyzLoader(options);
@@ -3851,8 +3895,7 @@ var WcsEsriImageryParser = (function (_super) {
                 var bbox = _this.options.bbox;
                 geometry.vertices.forEach(function (vertice, i) {
                     var xyz = res[i];
-                    var z = res[i].z;
-                    vertice.z = z;
+                    vertice.z = xyz.z;
                     vertice.x = xyz.x;
                     vertice.y = xyz.y;
                 });
@@ -3879,6 +3922,7 @@ var WcsEsriImageryParser = (function (_super) {
     };
     return WcsEsriImageryParser;
 }(Parser));
+WcsEsriImageryParser.BBOX_CHANGED_EVENT = "bbox.change";
 
 var Pipeline = (function (_super) {
     __extends(Pipeline, _super);
@@ -4250,10 +4294,10 @@ var Logger$1 = (function () {
                 }
             }
             if (Logger._broken) {
-                Logger.log = num >= 64 ? function () { console.log.apply(console, arguments); } : Logger.noop;
-                Logger.info = num >= 32 ? function () { console.info.apply(console, arguments); } : Logger.noop;
-                Logger.warn = num >= 16 ? function () { console.warn.apply(console, arguments); } : Logger.noop;
-                Logger.log = num >= 8 ? function () { console.log.apply(console, arguments); } : Logger.noop;
+                Logger.log = num >= 64 ? function (main) { console.log(main); } : Logger.noop;
+                Logger.info = num >= 32 ? function (main) { console.info(main); } : Logger.noop;
+                Logger.warn = num >= 16 ? function (main) { console.warn(main); } : Logger.noop;
+                Logger.log = num >= 8 ? function (main) { console.log(main); } : Logger.noop;
             }
             else {
                 // We get to keep line numbers if we do it this way.
@@ -4496,6 +4540,7 @@ exports.GocadPusherParser = GocadPusherParser;
 exports.HttpGocadPusherParser = HttpGocadPusherParser;
 exports.LocalGocadPusherParser = LocalGocadPusherParser;
 exports.ThrottleProxyParser = ThrottleProxyParser;
+exports.ElevationMaterial = ElevationMaterial;
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
 exports.HttpPusher = HttpPusher;

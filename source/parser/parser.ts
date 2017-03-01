@@ -1,4 +1,6 @@
-export abstract class Parser {
+import { EventDispatcher } from "../util/eventdispatcher";
+
+export abstract class Parser extends EventDispatcher {
    static codeBase = "";
 
    public getWorkersBase(): string {

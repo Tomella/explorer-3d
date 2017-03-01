@@ -1,8 +1,11 @@
 import { EsriImageryLoader } from "../imagery/esriimagerloader";
 import { Parser } from "../parser/parser";
+import { Event } from "../domain/event";
+
 declare var Elevation: any;
 
 export class WcsEsriImageryParser extends Parser {
+   static BBOX_CHANGED_EVENT = "bbox.change";
 
    constructor(public options: any = {}) {
       super();
@@ -20,6 +23,12 @@ export class WcsEsriImageryParser extends Parser {
             extent.xmax,
             extent.ymax
          ];
+
+         this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT, {
+            bbox,
+            aspectRatio: esriData.width / esriData.height
+         }));
+
          // Merge the options
          let options = Object.assign({}, this.options, { bbox });
 
@@ -33,8 +42,7 @@ export class WcsEsriImageryParser extends Parser {
 
             geometry.vertices.forEach((vertice, i) => {
                let xyz = res[i];
-               let z = res[i].z;
-               vertice.z = z;
+               vertice.z = xyz.z;
                vertice.x = xyz.x;
                vertice.y = xyz.y;
             });

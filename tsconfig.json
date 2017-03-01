@@ -2,6 +2,9 @@
     "compilerOptions": {
         "removeComments": false,
         "target": "es5",
+        "diagnostics": true,
+        "declaration": true,
+        "declarationDir": "/dec",
         "lib": ["dom", "es6", "es2015.core", "es2015.promise", "es2015.generator"]
     }
 }
