@@ -10,9 +10,11 @@ export { FileDrop }     from "./filedrop/filedrop";
 export { Parser }       from "./parser/parser";
 export { ElevationParser }  from "./parser/elevationparser";
 export { WcsEsriImageryParser } from "./elevation3js/wcsesriimageryparser";
+export { WcsWmsSurfaceParser } from "./elevation3js/wcswmssurfaceparser";
 export { GocadPusherParser }  from "./parser/gocadpusher";
 export { HttpGocadPusherParser }  from "./parser/httpgocadpusher";
 export { LocalGocadPusherParser }  from "./parser/localgocadpusher";
 export { ThrottleProxyParser }  from "./parser/throttleproxyparser";
 
 export { ElevationMaterial }  from "./material/elevationmaterial";
+export { WmsMaterial }  from "./material/wmsmaterial";

@@ -2989,18 +2989,18 @@ var World = (function () {
             },
             lights: {
                 ambient: {
-                    color: 0x888888
+                    color: 0xcccccc
                 },
                 directional: {
-                    color: 0x444444,
+                    color: 0x888888,
                     center: {
                         x: 0,
                         y: 0,
                         z: 0
                     },
                     position: {
-                        dx: 50,
-                        dy: 10,
+                        dx: 500,
+                        dy: 100,
                         dz: -300
                     }
                 }
@@ -3881,10 +3881,10 @@ var WcsEsriImageryParser = (function (_super) {
                 extent.xmax,
                 extent.ymax
             ];
-            _this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT, {
+            _this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT, Object.assign({
                 bbox: bbox,
                 aspectRatio: esriData.width / esriData.height
-            }));
+            }, esriData)));
             // Merge the options
             var options = Object.assign({}, _this.options, { bbox: bbox });
             var restLoader = new Elevation.WcsXyzLoader(options);
@@ -3923,6 +3923,97 @@ var WcsEsriImageryParser = (function (_super) {
     return WcsEsriImageryParser;
 }(Parser));
 WcsEsriImageryParser.BBOX_CHANGED_EVENT = "bbox.change";
+
+var WmsMaterial = (function (_super) {
+    __extends(WmsMaterial, _super);
+    function WmsMaterial(options) {
+        var _this = _super.call(this, {
+            map: getLoader(),
+            transparent: true,
+            opacity: options.opacity ? options.opacity : 1,
+            side: THREE.DoubleSide
+        }) || this;
+        _this.options = options;
+        function getLoader() {
+            var loader = new THREE.TextureLoader();
+            loader.crossOrigin = "";
+            var url = options.template
+                .replace("${width}", options.width ? options.width : 512)
+                .replace("${height}", options.height ? options.height : 512)
+                .replace("${bbox}", options.bbox.join(","));
+            return loader.load(url);
+        }
+        return _this;
+    }
+    return WmsMaterial;
+}(THREE.MeshPhongMaterial));
+
+var WcsWmsSurfaceParser = (function (_super) {
+    __extends(WcsWmsSurfaceParser, _super);
+    function WcsWmsSurfaceParser(options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.options = options;
+        return _this;
+    }
+    WcsWmsSurfaceParser.prototype.parse = function () {
+        var _this = this;
+        var loader = new Elevation.WcsXyzLoader(this.options);
+        return loader.load().then(function (res) {
+            var resolutionX = _this.options.resolutionX;
+            var resolutionY = res.length / resolutionX;
+            var geometry = new THREE.PlaneGeometry(resolutionX, resolutionY, resolutionX - 1, resolutionY - 1);
+            var bbox = _this.options.bbox;
+            var rgb = hexToRgb$2(_this.options.color ? _this.options.color : "#bbbbff");
+            geometry.vertices.forEach(function (vertice, i) {
+                var xyz = res[i];
+                var z = res[i].z;
+                vertice.z = z;
+                vertice.x = xyz.x;
+                vertice.y = xyz.y;
+            });
+            if (res.length) {
+                geometry.computeBoundingSphere();
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+            }
+            /*
+                     let loader = new THREE.TextureLoader();
+                     loader.crossOrigin = "";
+                     let url = this.options.imageryTemplate
+                        .replace("${width}", this.options.imageWidth ? this.options.imageWidth : 512)
+                        .replace("${height}", this.options.imageHeight ? this.options.imageHeight : 512)
+                        .replace("${bbox}", bbox.join(","));
+            
+                     let opacity = this.options.opacity ? this.options.opacity : 1;
+                     let material = new THREE.MeshPhongMaterial({
+                        map: loader.load(url),
+                        transparent: true,
+                        opacity: opacity,
+                        side: THREE.DoubleSide
+                     });
+            */
+            var material = new WmsMaterial({
+                width: _this.options.imageWidth,
+                height: _this.options.imageHeight,
+                opacity: _this.options.opacity,
+                template: _this.options.imageryTemplate
+            });
+            var mesh = new THREE.Mesh(geometry, material);
+            mesh.userData = _this.options;
+            return mesh;
+        });
+    };
+    return WcsWmsSurfaceParser;
+}(Parser));
+function hexToRgb$2(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
 
 var Pipeline = (function (_super) {
     __extends(Pipeline, _super);
@@ -4536,11 +4627,13 @@ exports.FileDrop = FileDrop;
 exports.Parser = Parser;
 exports.ElevationParser = ElevationParser;
 exports.WcsEsriImageryParser = WcsEsriImageryParser;
+exports.WcsWmsSurfaceParser = WcsWmsSurfaceParser;
 exports.GocadPusherParser = GocadPusherParser;
 exports.HttpGocadPusherParser = HttpGocadPusherParser;
 exports.LocalGocadPusherParser = LocalGocadPusherParser;
 exports.ThrottleProxyParser = ThrottleProxyParser;
 exports.ElevationMaterial = ElevationMaterial;
+exports.WmsMaterial = WmsMaterial;
 exports.DocumentPusher = DocumentPusher;
 exports.LinesToLinePusher = LinesToLinePusher;
 exports.HttpPusher = HttpPusher;

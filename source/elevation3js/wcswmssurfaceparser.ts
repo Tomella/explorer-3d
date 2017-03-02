@@ -1,4 +1,5 @@
 import { Parser } from "../parser/parser";
+import { WmsMaterial } from "../material/wmsmaterial";
 declare var Elevation: any;
 
 export class WcsWmsSurfaceParser extends Parser {
@@ -29,7 +30,7 @@ export class WcsWmsSurfaceParser extends Parser {
             geometry.computeFaceNormals();
             geometry.computeVertexNormals();
          }
-
+/*
          let loader = new THREE.TextureLoader();
          loader.crossOrigin = "";
          let url = this.options.imageryTemplate
@@ -44,7 +45,16 @@ export class WcsWmsSurfaceParser extends Parser {
             opacity: opacity,
             side: THREE.DoubleSide
          });
-         return new THREE.Mesh(geometry, material);
+*/
+         let material = new WmsMaterial({
+            width: this.options.imageWidth,
+            height: this.options.imageHeight,
+            opacity: this.options.opacity,
+            template: this.options.imageryTemplate
+         });
+         let mesh = new THREE.Mesh(geometry, material);
+         mesh.userData = this.options;
+         return mesh;
       });
    }
 }

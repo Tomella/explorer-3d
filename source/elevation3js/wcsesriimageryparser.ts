@@ -24,10 +24,13 @@ export class WcsEsriImageryParser extends Parser {
             extent.ymax
          ];
 
-         this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT, {
-            bbox,
-            aspectRatio: esriData.width / esriData.height
-         }));
+         this.dispatchEvent(new Event(WcsEsriImageryParser.BBOX_CHANGED_EVENT,
+            Object.assign({
+               bbox,
+               aspectRatio: esriData.width / esriData.height
+            },
+            esriData)
+         ));
 
          // Merge the options
          let options = Object.assign({}, this.options, { bbox });

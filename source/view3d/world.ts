@@ -22,19 +22,19 @@ export class World {
       },
       lights: {
          ambient: {
-            color: 0x888888
+            color: 0xcccccc
          },
          directional: {
-            color: 0x444444,
+            color: 0x888888,
             center: {
                x: 0,
                y: 0,
                z: 0
             },
             position: {
-               dx: 50,
-               dy: 10,
-               dz: - 300
+               dx: 500,
+               dy: 100,
+               dz: -300
             }
          }
       },

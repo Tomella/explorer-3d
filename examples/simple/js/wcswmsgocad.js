@@ -186,8 +186,10 @@
             promise = gocadParser.parse(metadata);
             break;
          case "elevation":
-         case "wcswms":
             promise = new Explorer3d.ElevationParser(metadata).parse();
+            break;
+         case "wcswms":
+            promise = new Explorer3d.WcsWmsSurfaceParser(metadata).parse();
             break;
          default:
             return;

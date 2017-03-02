@@ -1,4 +1,4 @@
-export class WmsMaterial extends THREE.MeshPhongMaterial {
+export class EsriImageryMaterial extends THREE.MeshPhongMaterial {
 
    constructor(public options: any) {
       super({
@@ -11,11 +11,7 @@ export class WmsMaterial extends THREE.MeshPhongMaterial {
       function getLoader() {
          let loader = new THREE.TextureLoader();
          loader.crossOrigin = "";
-         let url = options.template
-            .replace("${width}", options.width ? options.width : 512)
-            .replace("${height}", options.height ? options.height : 512)
-            .replace("${bbox}", options.bbox.join(","));
-         return loader.load(url);
+         return loader.load(options.url);
       }
    }
 }
