@@ -2894,7 +2894,7 @@ function loadBstones(tsurf) {
 function deepMerge(target, source) {
     var array = Array.isArray(source);
     var dst = array && [] || {};
-    if (Array.isArray(source)) {
+    if (array) {
         var dest_1 = dst;
         target = target || [];
         dest_1 = dest_1.concat(target);
@@ -3131,20 +3131,30 @@ var World = (function () {
             backgroundColor: { r: 255, g: 200, b: 200, a: 0.7 }
         };
         var sprite = makeTextSprite(labels.x, options);
-        sprite.position.set(pos.x + offset, pos.y, pos.z);
-        container.add(sprite);
+        if (sprite) {
+            sprite.position.set(pos.x + offset, pos.y, pos.z);
+            container.add(sprite);
+        }
         options.backgroundColor = { r: 200, g: 255, b: 200, a: 0.7 };
         sprite = makeTextSprite(labels.y, options);
-        sprite.position.set(pos.x, pos.y + offset, pos.z);
-        container.add(sprite);
+        if (sprite) {
+            sprite.position.set(pos.x, pos.y + offset, pos.z);
+            container.add(sprite);
+        }
         options.backgroundColor = { r: 200, g: 200, b: 255, a: 0.7 };
         sprite = makeTextSprite(labels.z, options);
-        sprite.position.set(pos.x, pos.y, pos.z + offset);
-        container.add(sprite);
+        if (sprite) {
+            sprite.position.set(pos.x, pos.y, pos.z + offset);
+            container.add(sprite);
+        }
         this.scene.add(container);
         container.visible = visible;
         return container;
         function makeTextSprite(message, parameters) {
+            // If we haven't got a message there is no point continuing
+            if (!message) {
+                return undefined;
+            }
             var parms = deepMerge({
                 fontface: "Arial",
                 fontsize: 14,
@@ -3514,6 +3524,253 @@ var DefaultWorldFactory = (function (_super) {
         this.state.world.update(options);
     };
     return DefaultWorldFactory;
+}(THREE.EventDispatcher));
+
+var WorldFactory = (function (_super) {
+    __extends(WorldFactory, _super);
+    function WorldFactory(element, options) {
+        if (options === void 0) { options = {}; }
+        var _this = _super.call(this) || this;
+        _this.element = element;
+        _this.state = {
+            world: null,
+            dataContainer: null,
+            get isAllVisible() {
+                if (this.state.world && this.state.world.scene) {
+                    return !this.state.dataContainer.children.some(function (layer) {
+                        return !layer.visible;
+                    });
+                }
+            }
+        };
+        _this.options = {
+            axisHelper: {
+                on: true,
+                labels: {
+                    x: " East ",
+                    y: " North ",
+                    z: " Elevation "
+                }
+            }
+        };
+        _this.options = deepMerge(_this.options, options);
+        return _this;
+    }
+    WorldFactory.prototype.destroy = function () {
+        if (this.state.world) {
+            this.state.world.destroy();
+            this.state.world = null;
+            this.state.dataContainer = null;
+            this.dispatchEvent({
+                type: "objects.changed",
+                objects: []
+            });
+        }
+    };
+    WorldFactory.prototype.remove = function (obj) {
+        var result = false;
+        if (this.state.dataContainer) {
+            this.state.dataContainer.remove(obj);
+            result = this.state.dataContainer.children.length > 0;
+            if (!result) {
+                this.destroy();
+            }
+            else {
+                this.resize();
+                this.dispatchEvent({
+                    type: "objects.changed",
+                    objects: this.state.dataContainer.children
+                });
+            }
+        }
+        return result;
+    };
+    WorldFactory.prototype.resize = function () {
+        var box = new THREE.Box3().setFromObject(this.state.dataContainer);
+        var center = box.getCenter();
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 2.5;
+        var options = deepMerge({
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: -radius,
+                        dz: z
+                    }
+                }
+            }
+        }, this.options);
+        this.state.world.resize(options);
+    };
+    WorldFactory.prototype.show = function (data) {
+        if (!this.state.dataContainer) {
+            this.create(data);
+        }
+        else {
+            this.extend(data);
+        }
+        this.dispatchEvent({
+            type: "objects.changed",
+            objects: this.state.dataContainer.children
+        });
+    };
+    WorldFactory.prototype.create = function (data) {
+        this.state.dataContainer = new THREE.Object3D();
+        this.state.dataContainer.add(data);
+        var box = new THREE.Box3().setFromObject(data);
+        var center = box.getCenter();
+        data.userData.center = center;
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 4;
+        var options = deepMerge({
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                up: {
+                    x: 0,
+                    y: 0,
+                    z: 1
+                },
+                position: {
+                    x: center.x,
+                    y: center.y - 3 * radius,
+                    z: center.z + radius
+                },
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: radius,
+                        dz: z
+                    }
+                }
+            }
+        }, this.options);
+        if (this.state.world) {
+            this.state.world.destroy();
+        }
+        this.state.world = new World(this.element, options);
+        // window["world"] = state.world;
+        this.add(this.state.dataContainer);
+        this.dispatchEvent({
+            type: "world.created",
+            factory: this
+        });
+    };
+    WorldFactory.prototype.getWorld = function () {
+        return this.state.world;
+    };
+    WorldFactory.prototype.add = function (obj3d) {
+        this.state.world.scene.add(obj3d);
+        this.state.world.dataContainer = obj3d;
+    };
+    WorldFactory.prototype.extend = function (data, resize) {
+        if (resize === void 0) { resize = true; }
+        var center = new THREE.Box3().setFromObject(data).getCenter();
+        data.userData.center = center;
+        this.state.dataContainer.add(data);
+        // Sometimes we don't want a flash.
+        if (!resize) {
+            return;
+        }
+        var box = new THREE.Box3().setFromObject(this.state.dataContainer);
+        center = box.getCenter();
+        var radius = box.getBoundingSphere().radius;
+        var z = radius * 4;
+        var options = Object.assign({
+            radius: radius,
+            axisHelper: {
+                on: true,
+                size: radius,
+                position: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            camera: {
+                far: z * 250,
+                near: radius * 0.01,
+                up: {
+                    x: 0,
+                    y: 0,
+                    z: 1
+                },
+                position: {
+                    x: center.x,
+                    y: center.y - 3 * radius,
+                    z: center.z + radius
+                },
+                lookAt: {
+                    x: center.x,
+                    y: center.y,
+                    z: center.z
+                }
+            },
+            lights: {
+                directional: {
+                    center: {
+                        x: center.x,
+                        y: center.y,
+                        z: center.z
+                    },
+                    position: {
+                        dx: radius,
+                        dy: -radius,
+                        dz: z
+                    }
+                }
+            }
+        }, this.options);
+        this.state.world.update(options);
+    };
+    return WorldFactory;
 }(THREE.EventDispatcher));
 
 var Modifier = (function () {
@@ -3909,7 +4166,9 @@ var WcsEsriImageryParser = (function (_super) {
                 var url = esriData.href;
                 var opacity = _this.options.opacity ? _this.options.opacity : 1;
                 var material = new THREE.MeshPhongMaterial({
-                    map: loader.load(url),
+                    map: loader.load(url, function (event) {
+                        _this.dispatchEvent(new Event(WcsEsriImageryParser.TEXTURE_LOADED_EVENT, mesh));
+                    }),
                     transparent: true,
                     opacity: opacity,
                     side: THREE.DoubleSide
@@ -3923,6 +4182,7 @@ var WcsEsriImageryParser = (function (_super) {
     return WcsEsriImageryParser;
 }(Parser));
 WcsEsriImageryParser.BBOX_CHANGED_EVENT = "bbox.change";
+WcsEsriImageryParser.TEXTURE_LOADED_EVENT = "texture.loaded";
 
 var WmsMaterial = (function (_super) {
     __extends(WmsMaterial, _super);
@@ -4621,6 +4881,7 @@ var ThrottleProxyParser = (function (_super) {
 exports.loadBorders = loadBorders;
 exports.loadBstones = loadBstones;
 exports.DefaultWorldFactory = DefaultWorldFactory;
+exports.WorldFactory = WorldFactory;
 exports.LabelSwitch = LabelSwitch;
 exports.VerticalExaggerate = VerticalExaggerate;
 exports.FileDrop = FileDrop;

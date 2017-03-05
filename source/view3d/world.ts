@@ -59,7 +59,6 @@ export class World {
 
    constructor(container: HTMLElement | string, options: any = {}) {
       this.options = deepMerge(this.options, options);
-
       let rect = document.body.getBoundingClientRect();
       if (typeof container === "string") {
          this.container = document.getElementById("" + container);
@@ -192,23 +191,34 @@ export class World {
       };
 
       let sprite = makeTextSprite(labels.x, options);
-      sprite.position.set(pos.x + offset, pos.y, pos.z);
-      container.add(sprite);
+      if (sprite) {
+         sprite.position.set(pos.x + offset, pos.y, pos.z);
+         container.add(sprite);
+      }
 
       options.backgroundColor = { r: 200, g: 255, b: 200, a: 0.7 };
       sprite = makeTextSprite(labels.y, options);
-      sprite.position.set(pos.x, pos.y + offset, pos.z);
-      container.add(sprite);
+      if (sprite) {
+         sprite.position.set(pos.x, pos.y + offset, pos.z);
+         container.add(sprite);
+      }
 
       options.backgroundColor = { r: 200, g: 200, b: 255, a: 0.7 };
       sprite = makeTextSprite(labels.z, options);
-      sprite.position.set(pos.x, pos.y, pos.z + offset);
-      container.add(sprite);
+      if (sprite) {
+         sprite.position.set(pos.x, pos.y, pos.z + offset);
+         container.add(sprite);
+      }
       this.scene.add(container);
       container.visible = visible;
       return container;
 
       function makeTextSprite(message: string, parameters: any): THREE.Sprite {
+         // If we haven't got a message there is no point continuing
+         if (!message) {
+            return undefined;
+         }
+
          let parms = deepMerge({
             fontface: "Arial",
             fontsize: 14,

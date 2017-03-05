@@ -2,7 +2,7 @@ export function deepMerge(target: any, source: any) {
    let array = Array.isArray(source);
    let dst: any = array && [] || {};
 
-   if (Array.isArray(source)) {
+   if (array) {
       let dest: any[] = <[any]>dst;
       target = target || [];
       dest = dest.concat(target);

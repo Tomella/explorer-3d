@@ -6,6 +6,7 @@ declare var Elevation: any;
 
 export class WcsEsriImageryParser extends Parser {
    static BBOX_CHANGED_EVENT = "bbox.change";
+   static TEXTURE_LOADED_EVENT = "texture.loaded";
 
    constructor(public options: any = {}) {
       super();
@@ -57,12 +58,16 @@ export class WcsEsriImageryParser extends Parser {
             }
 
             let loader = new THREE.TextureLoader();
+
+
             loader.crossOrigin = "";
             let url = esriData.href;
 
             let opacity = this.options.opacity ? this.options.opacity : 1;
             let material = new THREE.MeshPhongMaterial({
-               map: loader.load(url),
+               map: loader.load(url, event => {
+                  this.dispatchEvent(new Event(WcsEsriImageryParser.TEXTURE_LOADED_EVENT, mesh));
+               }),
                transparent: true,
                opacity: opacity,
                side: THREE.DoubleSide

@@ -3,6 +3,7 @@ export { loadBorders } from "./bridge3js/borders";
 export { loadBstones } from "./bridge3js/bstone";
 
 export { DefaultWorldFactory } from "./view3d/defaultfactory";
+export { WorldFactory } from "./view3d/worldfactory";
 export { LabelSwitch } from "./modifiers/labelswitch";
 export { VerticalExaggerate } from "./modifiers/verticalexaggerate";
 
