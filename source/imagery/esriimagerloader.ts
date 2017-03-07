@@ -6,6 +6,7 @@ export class EsriImageryLoader {
    load(): Promise<any> {
       let url = this.options.esriTemplate
             .replace("${bbox}", this.options.bbox)
+            .replace("${format}", "JSON")
             .replace("${size}", this.options.resolutionX + "," + this.options.resolutionY);
 
       let loader = new Elevation.HttpTextLoader(url, this.options);
