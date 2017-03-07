@@ -1711,7 +1711,7 @@ var Logger = (function () {
     function Logger() {
     }
     Logger.noop = function () { };
-    
+
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
@@ -2891,6 +2891,58 @@ function loadBstones(tsurf) {
     return null;
 }
 
+var CameraPositioner = (function () {
+    function CameraPositioner() {
+    }
+    CameraPositioner.prototype.onCreate = function (z, radius, center) {
+        return {
+            far: this.far(z, radius, center),
+            near: this.near(z, radius, center),
+            up: this.up(z, radius, center),
+            position: this.position(z, radius, center),
+            lookAt: this.lookAt(z, radius, center)
+        };
+    };
+    CameraPositioner.prototype.onResize = function (z, radius, center) {
+        return {
+            far: this.far(z, radius, center),
+            near: this.near(z, radius, center),
+            lookAt: this.lookAt(z, radius, center)
+        };
+    };
+    CameraPositioner.prototype.onExtend = function (z, radius, center) {
+        return this.onCreate(z, radius, center);
+    };
+    CameraPositioner.prototype.lookAt = function (z, radius, center) {
+        return {
+            x: center.x,
+            y: center.y,
+            z: center.z
+        };
+    };
+    CameraPositioner.prototype.position = function (z, radius, center) {
+        return {
+            x: center.x,
+            y: center.y - 3 * radius,
+            z: center.z + radius
+        };
+    };
+    CameraPositioner.prototype.up = function (z, radius, center) {
+        return {
+            x: 0,
+            y: 0,
+            z: 1
+        };
+    };
+    CameraPositioner.prototype.near = function (z, radius, center) {
+        return radius * 0.01;
+    };
+    CameraPositioner.prototype.far = function (z, radius, center) {
+        return z * 250;
+    };
+    return CameraPositioner;
+}());
+
 function deepMerge(target, source) {
     var array = Array.isArray(source);
     var dst = array && [] || {};
@@ -3240,7 +3292,7 @@ var World = (function () {
         this.controls.enableZoom = true;
         this.controls.userPanSpeed = 20000;
     };
-    
+
     World.prototype.addFirstPersonControls = function () {
         this.controls = new THREE.FirstPersonControls(this.camera, this.renderer.domElement);
         // this.controls.movementSpeed = this.options.radius;
@@ -3249,7 +3301,7 @@ var World = (function () {
         // this.controls.autoForward = false;
         // this.controls.dragToLook = false;
     };
-    
+
     World.prototype.addFlyControls = function () {
         this.controls = new THREE.FlyControls(this.camera, this.renderer.domElement);
         this.controls.movementSpeed = this.options.radius;
@@ -3258,7 +3310,7 @@ var World = (function () {
         this.controls.autoForward = false;
         this.controls.dragToLook = false;
     };
-    
+
     World.prototype.addLights = function () {
         var data = this.options.lights;
         this.lights[0] = new THREE.AmbientLight(data.ambient.color);
@@ -3271,7 +3323,7 @@ var World = (function () {
         this.lights[2].position.set(dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z - dir.position.dz);
         this.scene.add(this.lights[2]);
     };
-    
+
     World.prototype.updateLights = function () {
         this.scene.remove(this.lights[0]);
         this.scene.remove(this.lights[1]);
@@ -3554,6 +3606,7 @@ var WorldFactory = (function (_super) {
             }
         };
         _this.options = deepMerge(_this.options, options);
+        _this.options.cameraPositioner = options.cameraPositioner ? options.cameraPositioner : new CameraPositioner();
         return _this;
     }
     WorldFactory.prototype.destroy = function () {
@@ -3601,15 +3654,7 @@ var WorldFactory = (function (_super) {
                     z: center.z
                 }
             },
-            camera: {
-                far: z * 250,
-                near: radius * 0.01,
-                lookAt: {
-                    x: center.x,
-                    y: center.y,
-                    z: center.z
-                }
-            },
+            camera: this.options.cameraPositioner.onResize(z, radius, center),
             lights: {
                 directional: {
                     center: {
@@ -3658,25 +3703,7 @@ var WorldFactory = (function (_super) {
                     z: center.z
                 }
             },
-            camera: {
-                far: z * 250,
-                near: radius * 0.01,
-                up: {
-                    x: 0,
-                    y: 0,
-                    z: 1
-                },
-                position: {
-                    x: center.x,
-                    y: center.y - 3 * radius,
-                    z: center.z + radius
-                },
-                lookAt: {
-                    x: center.x,
-                    y: center.y,
-                    z: center.z
-                }
-            },
+            camera: this.options.cameraPositioner.onCreate(z, radius, center),
             lights: {
                 directional: {
                     center: {
@@ -3734,25 +3761,7 @@ var WorldFactory = (function (_super) {
                     z: center.z
                 }
             },
-            camera: {
-                far: z * 250,
-                near: radius * 0.01,
-                up: {
-                    x: 0,
-                    y: 0,
-                    z: 1
-                },
-                position: {
-                    x: center.x,
-                    y: center.y - 3 * radius,
-                    z: center.z + radius
-                },
-                lookAt: {
-                    x: center.x,
-                    y: center.y,
-                    z: center.z
-                }
-            },
+            camera: this.options.cameraPositioner.onExtend(z, radius, center),
             lights: {
                 directional: {
                     center: {
@@ -3980,7 +3989,7 @@ var ElevationMaterial = (function (_super) {
      *       resolutionX
      *       resolutionY
      *       data          // Single dimension array of z values
- 
+
      *    optional:
      *       maxDepth     // Used to scale water, default 5000m (positive depth)
      *       maxElevation // Used to scale elevation, default 2200m
@@ -4004,6 +4013,8 @@ var ElevationMaterial = (function (_super) {
         blue.setMin(-maxDepth);
         lut.setMax(Math.floor(maxElevation));
         lut.setMin(0);
+        var index = 0;
+        var count = 0;
         res.forEach(function (item, i) {
             var z = item.z;
             if (z > 0) {
@@ -4024,6 +4035,29 @@ var ElevationMaterial = (function (_super) {
             opacity: opacity,
             side: THREE.DoubleSide
         });
+        function fillColor() {
+            setTimeout(function () {
+                if (count >= res.length) {
+                    return;
+                }
+                do {
+                    var item = res[count++];
+                    var z = item.z;
+                    if (!item) {
+                        break;
+                    }
+                    if (z > 0) {
+                        var color = lut.getColor(z);
+                        drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+                    }
+                    else {
+                        var color = blue.getColor(z);
+                        drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+                    }
+                } while (count % 4000);
+                fillColor();
+            });
+        }
         function drawPixel(x, y, r, g, b, a) {
             d[0] = r;
             d[1] = g;
@@ -4256,7 +4290,7 @@ var WcsWmsSurfaceParser = (function (_super) {
                         .replace("${width}", this.options.imageWidth ? this.options.imageWidth : 512)
                         .replace("${height}", this.options.imageHeight ? this.options.imageHeight : 512)
                         .replace("${bbox}", bbox.join(","));
-            
+
                      let opacity = this.options.opacity ? this.options.opacity : 1;
                      let material = new THREE.MeshPhongMaterial({
                         map: loader.load(url),
@@ -4642,7 +4676,7 @@ var Logger$1 = (function () {
     function Logger() {
     }
     Logger.noop = function () { };
-    
+
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
@@ -4892,6 +4926,7 @@ var ThrottleProxyParser = (function (_super) {
 
 exports.loadBorders = loadBorders;
 exports.loadBstones = loadBstones;
+exports.CameraPositioner = CameraPositioner;
 exports.DefaultWorldFactory = DefaultWorldFactory;
 exports.WorldFactory = WorldFactory;
 exports.LabelSwitch = LabelSwitch;

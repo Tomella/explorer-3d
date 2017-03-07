@@ -2,6 +2,7 @@ export * from "./libs";
 export { loadBorders } from "./bridge3js/borders";
 export { loadBstones } from "./bridge3js/bstone";
 
+export { CameraPositioner } from "./view3d/camerapositioner";
 export { DefaultWorldFactory } from "./view3d/defaultfactory";
 export { WorldFactory } from "./view3d/worldfactory";
 export { LabelSwitch } from "./modifiers/labelswitch";

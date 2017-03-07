@@ -1,3 +1,4 @@
+import { CameraPositioner } from "./camerapositioner";
 import { World } from "./world";
 import { deepMerge } from "../util/deepmerge";
 
@@ -14,7 +15,7 @@ export class WorldFactory extends THREE.EventDispatcher {
       }
    };
 
-   private options = {
+   private options: any = {
       axisHelper: {
          on: true,
          labels: {
@@ -28,6 +29,7 @@ export class WorldFactory extends THREE.EventDispatcher {
    constructor(public element: HTMLElement, options: any = {}) {
       super();
       this.options = deepMerge(this.options, options);
+      this.options.cameraPositioner = options.cameraPositioner ? options.cameraPositioner : new CameraPositioner();
    }
 
    destroy(): void {
@@ -77,15 +79,7 @@ export class WorldFactory extends THREE.EventDispatcher {
                z: center.z
             }
          },
-         camera: {
-            far: z * 250,
-            near: radius * 0.01,
-            lookAt: {
-               x: center.x,
-               y: center.y,
-               z: center.z
-            }
-         },
+         camera: this.options.cameraPositioner.onResize(z, radius, center),
          lights: {
             directional: {
                center: {
@@ -137,25 +131,7 @@ export class WorldFactory extends THREE.EventDispatcher {
                z: center.z
             }
          },
-         camera: {
-            far: z * 250,
-            near: radius * 0.01,
-            up: {
-               x: 0,
-               y: 0,
-               z: 1
-            },
-            position: {
-               x: center.x,
-               y: center.y - 3 * radius,
-               z: center.z + radius
-            },
-            lookAt: {
-               x: center.x,
-               y: center.y,
-               z: center.z
-            }
-         },
+         camera: this.options.cameraPositioner.onCreate(z, radius, center),
          lights: {
             directional: {
                center: {
@@ -218,25 +194,7 @@ export class WorldFactory extends THREE.EventDispatcher {
                z: center.z
             }
          },
-         camera: {
-            far: z * 250,
-            near: radius * 0.01,
-            up: {
-               x: 0,
-               y: 0,
-               z: 1
-            },
-            position: {
-               x: center.x,
-               y: center.y - 3 * radius,
-               z: center.z + radius
-            },
-            lookAt: {
-               x: center.x,
-               y: center.y,
-               z: center.z
-            }
-         },
+         camera: this.options.cameraPositioner.onExtend(z, radius, center),
          lights: {
             directional: {
                center: {

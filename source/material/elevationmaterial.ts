@@ -34,6 +34,9 @@ export class ElevationMaterial extends THREE.MeshPhongMaterial {
       lut.setMax(Math.floor(maxElevation));
       lut.setMin(0);
 
+      let index = 0;
+      let count = 0;
+
       res.forEach((item, i) => {
          let z = item.z;
 
@@ -56,6 +59,31 @@ export class ElevationMaterial extends THREE.MeshPhongMaterial {
          opacity: opacity,
          side: THREE.DoubleSide
       });
+
+      function fillColor() {
+         setTimeout(() => {
+            if (count >= res.length) {
+               return;
+            }
+
+            do {
+               let item = res[count++];
+               let z = item.z;
+               if (!item) {
+                  break;
+               }
+
+               if (z > 0) {
+                  let color = lut.getColor(z);
+                  drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+               } else {
+                  let color = blue.getColor(z);
+                  drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
+               }
+            } while (count % 4000);
+            fillColor();
+         });
+      }
 
       function drawPixel(x, y, r, g, b, a) {
          d[0]   = r;
