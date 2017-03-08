@@ -1,6 +1,5 @@
 import { Parser } from "../parser/parser";
 import { WmsMaterial } from "../material/wmsmaterial";
-declare var Elevation: any;
 
 export class WcsWmsSurfaceParser extends Parser {
 
@@ -30,27 +29,13 @@ export class WcsWmsSurfaceParser extends Parser {
             geometry.computeFaceNormals();
             geometry.computeVertexNormals();
          }
-/*
-         let loader = new THREE.TextureLoader();
-         loader.crossOrigin = "";
-         let url = this.options.imageryTemplate
-            .replace("${width}", this.options.imageWidth ? this.options.imageWidth : 512)
-            .replace("${height}", this.options.imageHeight ? this.options.imageHeight : 512)
-            .replace("${bbox}", bbox.join(","));
 
-         let opacity = this.options.opacity ? this.options.opacity : 1;
-         let material = new THREE.MeshPhongMaterial({
-            map: loader.load(url),
-            transparent: true,
-            opacity: opacity,
-            side: THREE.DoubleSide
-         });
-*/
          let material = new WmsMaterial({
             width: this.options.imageWidth,
             height: this.options.imageHeight,
             opacity: this.options.opacity,
-            template: this.options.imageryTemplate
+            template: this.options.imageryTemplate,
+            bbox
          });
          let mesh = new THREE.Mesh(geometry, material);
          mesh.userData = this.options;
