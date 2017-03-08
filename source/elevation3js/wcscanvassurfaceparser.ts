@@ -1,6 +1,5 @@
 import { Parser } from "../parser/parser";
 import { ElevationMaterial } from "../material/elevationmaterial";
-declare var Elevation: any;
 
 export class WcsCanvasSurfaceParser extends Parser {
 

@@ -1,5 +1,3 @@
-declare var Elevation: any;
-
 export class EsriImageryLoader {
    constructor(public options: any) {}
 

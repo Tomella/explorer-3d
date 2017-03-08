@@ -2,8 +2,6 @@ import { EsriImageryLoader } from "../imagery/esriimagerloader";
 import { Parser } from "../parser/parser";
 import { Event } from "../domain/event";
 
-declare var Elevation: any;
-
 export class WcsEsriImageryParser extends Parser {
    static BBOX_CHANGED_EVENT = "bbox.change";
    static TEXTURE_LOADED_EVENT = "texture.loaded";

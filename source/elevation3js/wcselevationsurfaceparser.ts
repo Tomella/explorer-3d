@@ -1,5 +1,4 @@
 import { Parser } from "../parser/parser";
-declare var Elevation: any;
 
 export class WcsElevationSurfaceParser extends Parser {
 

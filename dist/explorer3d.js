@@ -1711,7 +1711,7 @@ var Logger = (function () {
     function Logger() {
     }
     Logger.noop = function () { };
-
+    
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
@@ -3292,7 +3292,7 @@ var World = (function () {
         this.controls.enableZoom = true;
         this.controls.userPanSpeed = 20000;
     };
-
+    
     World.prototype.addFirstPersonControls = function () {
         this.controls = new THREE.FirstPersonControls(this.camera, this.renderer.domElement);
         // this.controls.movementSpeed = this.options.radius;
@@ -3301,7 +3301,7 @@ var World = (function () {
         // this.controls.autoForward = false;
         // this.controls.dragToLook = false;
     };
-
+    
     World.prototype.addFlyControls = function () {
         this.controls = new THREE.FlyControls(this.camera, this.renderer.domElement);
         this.controls.movementSpeed = this.options.radius;
@@ -3310,7 +3310,7 @@ var World = (function () {
         this.controls.autoForward = false;
         this.controls.dragToLook = false;
     };
-
+    
     World.prototype.addLights = function () {
         var data = this.options.lights;
         this.lights[0] = new THREE.AmbientLight(data.ambient.color);
@@ -3323,7 +3323,7 @@ var World = (function () {
         this.lights[2].position.set(dir.center.x + dir.position.dx, dir.center.y + dir.position.dy, dir.center.z - dir.position.dz);
         this.scene.add(this.lights[2]);
     };
-
+    
     World.prototype.updateLights = function () {
         this.scene.remove(this.lights[0]);
         this.scene.remove(this.lights[1]);
@@ -3989,7 +3989,7 @@ var ElevationMaterial = (function (_super) {
      *       resolutionX
      *       resolutionY
      *       data          // Single dimension array of z values
-
+ 
      *    optional:
      *       maxDepth     // Used to scale water, default 5000m (positive depth)
      *       maxElevation // Used to scale elevation, default 2200m
@@ -4283,27 +4283,12 @@ var WcsWmsSurfaceParser = (function (_super) {
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
             }
-            /*
-                     let loader = new THREE.TextureLoader();
-                     loader.crossOrigin = "";
-                     let url = this.options.imageryTemplate
-                        .replace("${width}", this.options.imageWidth ? this.options.imageWidth : 512)
-                        .replace("${height}", this.options.imageHeight ? this.options.imageHeight : 512)
-                        .replace("${bbox}", bbox.join(","));
-
-                     let opacity = this.options.opacity ? this.options.opacity : 1;
-                     let material = new THREE.MeshPhongMaterial({
-                        map: loader.load(url),
-                        transparent: true,
-                        opacity: opacity,
-                        side: THREE.DoubleSide
-                     });
-            */
             var material = new WmsMaterial({
                 width: _this.options.imageWidth,
                 height: _this.options.imageHeight,
                 opacity: _this.options.opacity,
-                template: _this.options.imageryTemplate
+                template: _this.options.imageryTemplate,
+                bbox: bbox
             });
             var mesh = new THREE.Mesh(geometry, material);
             mesh.userData = _this.options;
@@ -4676,7 +4661,7 @@ var Logger$1 = (function () {
     function Logger() {
     }
     Logger.noop = function () { };
-
+    
     Object.defineProperty(Logger, "level", {
         set: function (value) {
             var num = parseInt(value);
