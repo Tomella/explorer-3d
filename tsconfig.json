@@ -5,6 +5,7 @@
         "diagnostics": true,
         "declaration": true,
         "declarationDir": "/dec",
+        "typeRoots": [ "./node_modules/@types/",  "./typings/"],
         "lib": ["dom", "es6", "es2015.core", "es2015.promise", "es2015.generator"]
     }
 }
