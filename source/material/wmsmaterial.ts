@@ -1,6 +1,6 @@
 export class WmsMaterial extends THREE.MeshPhongMaterial {
 
-   constructor(public options: any) {
+   constructor(public options: {width: number, height: number, template: string, bbox: number[], opacity: number}) {
       super({
          map: getLoader(),
          transparent: true,
