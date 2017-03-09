@@ -4013,8 +4013,6 @@ var ElevationMaterial = (function (_super) {
         blue.setMin(-maxDepth);
         lut.setMax(Math.floor(maxElevation));
         lut.setMin(0);
-        var index = 0;
-        var count = 0;
         res.forEach(function (item, i) {
             var z = item.z;
             if (z > 0) {
@@ -4035,29 +4033,6 @@ var ElevationMaterial = (function (_super) {
             opacity: opacity,
             side: THREE.DoubleSide
         });
-        function fillColor() {
-            setTimeout(function () {
-                if (count >= res.length) {
-                    return;
-                }
-                do {
-                    var item = res[count++];
-                    var z = item.z;
-                    if (!item) {
-                        break;
-                    }
-                    if (z > 0) {
-                        var color = lut.getColor(z);
-                        drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-                    }
-                    else {
-                        var color = blue.getColor(z);
-                        drawPixel(i % resolutionX, Math.floor(i / resolutionX), color.r * 255, color.g * 255, color.b * 255, 255);
-                    }
-                } while (count % 4000);
-                fillColor();
-            });
-        }
         function drawPixel(x, y, r, g, b, a) {
             d[0] = r;
             d[1] = g;
