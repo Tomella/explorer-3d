@@ -4209,20 +4209,20 @@ var WmsMaterial = (function (_super) {
     __extends(WmsMaterial, _super);
     function WmsMaterial(options) {
         var _this = _super.call(this, {
-            map: getLoader(),
+            map: getLoader(options.onLoad),
             transparent: true,
             opacity: options.opacity ? options.opacity : 1,
             side: THREE.DoubleSide
         }) || this;
         _this.options = options;
-        function getLoader() {
+        function getLoader(onLoad) {
             var loader = new THREE.TextureLoader();
             loader.crossOrigin = "";
             var url = options.template
                 .replace("${width}", options.width ? options.width : 512)
                 .replace("${height}", options.height ? options.height : 512)
                 .replace("${bbox}", options.bbox.join(","));
-            return loader.load(url);
+            return loader.load(url, onLoad);
         }
         return _this;
     }
