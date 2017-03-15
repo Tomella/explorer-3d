@@ -34,8 +34,8 @@ export class World {
                z: 0
             },
             position: {
-               dx: 500,
-               dy: 100,
+               dx: 100,
+               dy: 500,
                dz: -300
             }
          }

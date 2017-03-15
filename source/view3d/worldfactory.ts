@@ -170,14 +170,15 @@ export class WorldFactory extends THREE.EventDispatcher {
    }
 
    public extend(data: THREE.Object3D, resize: boolean = true): void {
-      let center = new THREE.Box3().setFromObject(data).getCenter();
-      data.userData.center = center;
       this.state.dataContainer.add(data);
 
       // Sometimes we don't want a flash.
       if (!resize) {
          return;
       }
+
+      let center = new THREE.Box3().setFromObject(data).getCenter();
+      data.userData.center = center;
 
       let box = new THREE.Box3().setFromObject(this.state.dataContainer);
       center = box.getCenter();
