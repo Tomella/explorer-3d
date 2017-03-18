@@ -69,8 +69,10 @@ export class World {
       }
       this.scene = new THREE.Scene();
       this.renderer = new THREE.WebGLRenderer({ clearColor: 0xff0000 });
-
       this.renderer.setSize(rect.width, rect.height);
+
+      let renderers = options.renderers ? options.renderers : [];
+      renderers.push(this.renderer);
 
       let cam = this.options.camera;
       this.camera = new THREE.PerspectiveCamera(cam.fov, rect.width / rect.height, cam.near, cam.far);
@@ -108,7 +110,7 @@ export class World {
 
          // context.renderer.clear();
          context.camera.lookAt(context.lookAt);
-         context.renderer.render(context.scene, context.camera);
+         renderers.forEach(renderer => renderer.render(context.scene, context.camera));
          context.controls.update(0.02);
       }
    }
@@ -238,7 +240,6 @@ export class World {
          // get size data (height depends only on font size)
          let metrics = context.measureText(message);
          let textWidth = metrics.width;
-         Logger.log(textWidth);
 
          // background color
          context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","
