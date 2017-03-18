@@ -3076,6 +3076,8 @@ var World = (function () {
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer({ clearColor: 0xff0000 });
         this.renderer.setSize(rect.width, rect.height);
+        var renderers = options.renderers ? options.renderers : [];
+        renderers.push(this.renderer);
         var cam = this.options.camera;
         this.camera = new THREE.PerspectiveCamera(cam.fov, rect.width / rect.height, cam.near, cam.far);
         this.camera.up.set(cam.up.x, cam.up.y, cam.up.z);
@@ -3108,7 +3110,7 @@ var World = (function () {
             window.requestAnimationFrame(animate);
             // context.renderer.clear();
             context.camera.lookAt(context.lookAt);
-            context.renderer.render(context.scene, context.camera);
+            renderers.forEach(function (renderer) { return renderer.render(context.scene, context.camera); });
             context.controls.update(0.02);
         }
     }
@@ -3224,7 +3226,6 @@ var World = (function () {
             // get size data (height depends only on font size)
             var metrics = context.measureText(message);
             var textWidth = metrics.width;
-            Logger.log(textWidth);
             // background color
             context.fillStyle = "rgba(" + parms.backgroundColor.r + "," + parms.backgroundColor.g + ","
                 + parms.backgroundColor.b + "," + parms.backgroundColor.a + ")";
@@ -3728,8 +3729,9 @@ var WorldFactory = (function (_super) {
         // window["world"] = state.world;
         this.add(this.state.dataContainer);
         this.dispatchEvent({
-            type: "world.created",
-            factory: this
+            type: WorldFactory.WORLD_CREATED,
+            factory: this,
+            world: this.state.world
         });
     };
     WorldFactory.prototype.getWorld = function () {
@@ -3783,6 +3785,7 @@ var WorldFactory = (function (_super) {
     };
     return WorldFactory;
 }(THREE.EventDispatcher));
+WorldFactory.WORLD_CREATED = "world.created";
 
 var Modifier = (function () {
     function Modifier(eventdispatcher) {
