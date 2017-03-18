@@ -3,6 +3,8 @@ import { World } from "./world";
 import { deepMerge } from "../util/deepmerge";
 
 export class WorldFactory extends THREE.EventDispatcher {
+   static WORLD_CREATED = "world.created";
+
    private state = {
       world: <World>null,
       dataContainer: null,
@@ -98,7 +100,7 @@ export class WorldFactory extends THREE.EventDispatcher {
       this.state.world.resize(options);
    }
 
-   public show(data: THREE.Object3D): void {
+   show(data: THREE.Object3D): void {
       if (!this.state.dataContainer) {
          this.create(data);
       } else {
@@ -111,7 +113,7 @@ export class WorldFactory extends THREE.EventDispatcher {
       });
    }
 
-   public create(data: THREE.Object3D): void {
+   create(data: THREE.Object3D): void {
       this.state.dataContainer = new THREE.Object3D();
       this.state.dataContainer.add(data);
 
@@ -155,8 +157,9 @@ export class WorldFactory extends THREE.EventDispatcher {
       // window["world"] = state.world;
       this.add(this.state.dataContainer);
       this.dispatchEvent({
-         type: "world.created",
-         factory: this
+         type: WorldFactory.WORLD_CREATED,
+         factory: this,
+         world: this.state.world
       });
    }
 
